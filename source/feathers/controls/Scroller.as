@@ -2564,7 +2564,7 @@ package feathers.controls
 			//and it's better to handle it here instead of having them
 			//invalidate unrelated flags
 			const dataInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_DATA);
-			const scrollInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_SCROLL);
+			var scrollInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_SCROLL);
 			const clippingInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_CLIPPING);
 			const stylesInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STYLES);
 			const stateInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STATE);
@@ -2588,7 +2588,7 @@ package feathers.controls
 				this.refreshInteractionModeEvents();
 			}
 
-			if(stateInvalid)
+			if(scrollBarInvalid || stateInvalid)
 			{
 				this.refreshEnabled();
 			}
@@ -2643,6 +2643,7 @@ package feathers.controls
 			if(scrollInvalid || this._maxHorizontalScrollPosition != oldMaxHorizontalScrollPosition ||
 				this._maxVerticalScrollPosition != oldMaxVerticalScrollPosition)
 			{
+				scrollInvalid = true;
 				this.dispatchEventWith(Event.SCROLL);
 			}
 
@@ -3290,8 +3291,10 @@ package feathers.controls
 			}
 			if(this._touchBlocker)
 			{
-				this._touchBlocker.width = this.actualWidth;
-				this._touchBlocker.height = this.actualHeight;
+				this._touchBlocker.x = this._leftViewPortOffset;
+				this._touchBlocker.y = this._topViewPortOffset;
+				this._touchBlocker.width = this._viewPort.visibleWidth;
+				this._touchBlocker.height = this._viewPort.visibleHeight;
 			}
 
 			this._viewPort.x = this._leftViewPortOffset - this._horizontalScrollPosition;
@@ -3359,8 +3362,18 @@ package feathers.controls
 				const clipRect:Rectangle = this._viewPort.clipRect;
 				clipRect.x = this._horizontalScrollPosition;
 				clipRect.y = this._verticalScrollPosition;
-				clipRect.width = this.actualWidth - this._leftViewPortOffset - this._rightViewPortOffset;
-				clipRect.height = this.actualHeight - this._topViewPortOffset - this._bottomViewPortOffset;
+				var clipWidth:Number = this.actualWidth - this._leftViewPortOffset - this._rightViewPortOffset;
+				if(clipWidth < 0)
+				{
+					clipWidth = 0;
+				}
+				clipRect.width = clipWidth;
+				var clipHeight:Number = this.actualHeight - this._topViewPortOffset - this._bottomViewPortOffset;
+				if(clipHeight < 0)
+				{
+					clipHeight = 0;
+				}
+				clipRect.height = clipHeight;
 				this._viewPort.clipRect = clipRect;
 			}
 			else
@@ -4368,7 +4381,7 @@ package feathers.controls
 				this._touchPointID = -1;
 				return;
 			}
-			if(this._maxVerticalScrollPosition == 0)
+			if(this._maxVerticalScrollPosition == 0 || this._verticalScrollPolicy == SCROLL_POLICY_OFF)
 			{
 				return;
 			}
@@ -4378,6 +4391,15 @@ package feathers.controls
 			HELPER_POINT.y = (event.stageY - starlingViewPort.y) / Starling.contentScaleFactor;
 			if(this.contains(this.stage.hitTest(HELPER_POINT, true)))
 			{
+				this.globalToLocal(HELPER_POINT, HELPER_POINT);
+				var localMouseX:Number = HELPER_POINT.x;
+				var localMouseY:Number = HELPER_POINT.y;
+				if(localMouseX < this._leftViewPortOffset || localMouseY < this._topViewPortOffset ||
+					localMouseX >= this.actualWidth - this._rightViewPortOffset ||
+					localMouseY >= this.actualHeight - this._bottomViewPortOffset)
+				{
+					return;
+				}
 				this.revealVerticalScrollBar();
 				var targetVerticalScrollPosition:Number = this._verticalScrollPosition - event.delta * this.actualVerticalScrollStep;
 				if(targetVerticalScrollPosition < this._minVerticalScrollPosition)

@@ -288,7 +288,7 @@ package feathers.controls
 		 * }</listing>
 		 */
 		public static function show(content:DisplayObject, origin:DisplayObject, supportedDirections:String = DIRECTION_ANY,
-			isModal:Boolean = true, customCalloutFactory:Function = null):Callout
+			isModal:Boolean = true, customCalloutFactory:Function = null, customOverlayFactory:Function = null):Callout
 		{
 			if(!origin.stage)
 			{
@@ -303,8 +303,12 @@ package feathers.controls
 			callout.content = content;
 			callout.supportedDirections = supportedDirections;
 			callout.origin = origin;
-			const overlayFactory:Function = calloutOverlayFactory != null ? calloutOverlayFactory : PopUpManager.defaultOverlayFactory;
-			PopUpManager.addPopUp(callout, isModal, false, overlayFactory);
+			factory = customOverlayFactory;
+			if(factory == null)
+			{
+				factory = calloutOverlayFactory != null ? calloutOverlayFactory : PopUpManager.defaultOverlayFactory;
+			}
+			PopUpManager.addPopUp(callout, isModal, false, factory);
 			return callout;
 		}
 
@@ -1756,51 +1760,56 @@ package feathers.controls
 			const yPosition:Number = (this._topArrowSkin &&  this._arrowPosition == ARROW_POSITION_TOP) ? this._topArrowSkin.height + this._topArrowGap : 0;
 			const widthOffset:Number = (this._rightArrowSkin && this._arrowPosition == ARROW_POSITION_RIGHT) ? this._rightArrowSkin.width + this._rightArrowGap : 0;
 			const heightOffset:Number = (this._bottomArrowSkin && this._arrowPosition == ARROW_POSITION_BOTTOM) ? this._bottomArrowSkin.height + this._bottomArrowGap : 0;
-			this._backgroundSkin.x = xPosition;
-			this._backgroundSkin.y = yPosition;
-			this._backgroundSkin.width = this.actualWidth - xPosition - widthOffset;
-			this._backgroundSkin.height = this.actualHeight - yPosition - heightOffset;
+			const backgroundWidth:Number = this.actualWidth - xPosition - widthOffset;
+			const backgroundHeight:Number = this.actualHeight - yPosition - heightOffset;
+			if(this._backgroundSkin)
+			{
+				this._backgroundSkin.x = xPosition;
+				this._backgroundSkin.y = yPosition;
+				this._backgroundSkin.width = backgroundWidth;
+				this._backgroundSkin.height = backgroundHeight;
+			}
 
 			if(this.currentArrowSkin)
 			{
 				if(this._arrowPosition == ARROW_POSITION_LEFT)
 				{
-					this._leftArrowSkin.x = this._backgroundSkin.x - this._leftArrowSkin.width - this._leftArrowGap;
-					this._leftArrowSkin.y = this._arrowOffset + this._backgroundSkin.y + (this._backgroundSkin.height - this._leftArrowSkin.height) / 2;
-					this._leftArrowSkin.y = Math.min(this._backgroundSkin.y + this._backgroundSkin.height - this._paddingBottom - this._leftArrowSkin.height, Math.max(this._backgroundSkin.y + this._paddingTop, this._leftArrowSkin.y));
+					this._leftArrowSkin.x = xPosition - this._leftArrowSkin.width - this._leftArrowGap;
+					this._leftArrowSkin.y = this._arrowOffset + yPosition + (backgroundHeight - this._leftArrowSkin.height) / 2;
+					this._leftArrowSkin.y = Math.min(yPosition + backgroundHeight - this._paddingBottom - this._leftArrowSkin.height, Math.max(yPosition + this._paddingTop, this._leftArrowSkin.y));
 				}
 				else if(this._arrowPosition == ARROW_POSITION_RIGHT)
 				{
-					this._rightArrowSkin.x = this._backgroundSkin.x + this._backgroundSkin.width + this._rightArrowGap;
-					this._rightArrowSkin.y = this._arrowOffset + this._backgroundSkin.y + (this._backgroundSkin.height - this._rightArrowSkin.height) / 2;
-					this._rightArrowSkin.y = Math.min(this._backgroundSkin.y + this._backgroundSkin.height - this._paddingBottom - this._rightArrowSkin.height, Math.max(this._backgroundSkin.y + this._paddingTop, this._rightArrowSkin.y));
+					this._rightArrowSkin.x = xPosition + backgroundWidth + this._rightArrowGap;
+					this._rightArrowSkin.y = this._arrowOffset + yPosition + (backgroundHeight - this._rightArrowSkin.height) / 2;
+					this._rightArrowSkin.y = Math.min(yPosition + backgroundHeight - this._paddingBottom - this._rightArrowSkin.height, Math.max(yPosition + this._paddingTop, this._rightArrowSkin.y));
 				}
 				else if(this._arrowPosition == ARROW_POSITION_BOTTOM)
 				{
-					this._bottomArrowSkin.x = this._arrowOffset + this._backgroundSkin.x + (this._backgroundSkin.width - this._bottomArrowSkin.width) / 2;
-					this._bottomArrowSkin.x = Math.min(this._backgroundSkin.x + this._backgroundSkin.width - this._paddingRight - this._bottomArrowSkin.width, Math.max(this._backgroundSkin.x + this._paddingLeft, this._bottomArrowSkin.x));
-					this._bottomArrowSkin.y = this._backgroundSkin.y + this._backgroundSkin.height + this._bottomArrowGap;
+					this._bottomArrowSkin.x = this._arrowOffset + xPosition + (backgroundWidth - this._bottomArrowSkin.width) / 2;
+					this._bottomArrowSkin.x = Math.min(xPosition + backgroundWidth - this._paddingRight - this._bottomArrowSkin.width, Math.max(xPosition + this._paddingLeft, this._bottomArrowSkin.x));
+					this._bottomArrowSkin.y = yPosition + backgroundHeight + this._bottomArrowGap;
 				}
 				else //top
 				{
-					this._topArrowSkin.x = this._arrowOffset + this._backgroundSkin.x + (this._backgroundSkin.width - this._topArrowSkin.width) / 2;
-					this._topArrowSkin.x = Math.min(this._backgroundSkin.x + this._backgroundSkin.width - this._paddingRight - this._topArrowSkin.width, Math.max(this._backgroundSkin.x + this._paddingLeft, this._topArrowSkin.x));
-					this._topArrowSkin.y = this._backgroundSkin.y - this._topArrowSkin.height - this._topArrowGap;
+					this._topArrowSkin.x = this._arrowOffset + xPosition + (backgroundWidth - this._topArrowSkin.width) / 2;
+					this._topArrowSkin.x = Math.min(xPosition + backgroundWidth - this._paddingRight - this._topArrowSkin.width, Math.max(xPosition + this._paddingLeft, this._topArrowSkin.x));
+					this._topArrowSkin.y = yPosition - this._topArrowSkin.height - this._topArrowGap;
 				}
 			}
 
 			if(this._content)
 			{
-				this._content.x = this._backgroundSkin.x + this._paddingLeft;
-				this._content.y = this._backgroundSkin.y + this._paddingTop;
+				this._content.x = xPosition + this._paddingLeft;
+				this._content.y = yPosition + this._paddingTop;
 				const oldIgnoreContentResize:Boolean = this._ignoreContentResize;
 				this._ignoreContentResize = true;
-				const contentWidth:Number = this._backgroundSkin.width - this._paddingLeft - this._paddingRight;
+				const contentWidth:Number = backgroundWidth - this._paddingLeft - this._paddingRight;
 				if(this._content.width != contentWidth)
 				{
 					this._content.width = contentWidth;
 				}
-				const contentHeight:Number = this._backgroundSkin.height - this._paddingTop - this._paddingBottom;
+				const contentHeight:Number = backgroundHeight - this._paddingTop - this._paddingBottom;
 				if(this._content.height != contentHeight)
 				{
 					this._content.height = contentHeight;
