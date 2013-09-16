@@ -1306,25 +1306,42 @@ package feathers.controls.supportClasses
 
 		private function refreshSelection():void
 		{
-			for each(var renderer:IGroupedListItemRenderer in this._activeItemRenderers)
+			var rendererCount:int = this._activeItemRenderers.length;
+			for(var i:int = 0; i < rendererCount; i++)
 			{
+				var renderer:IGroupedListItemRenderer = this._activeItemRenderers[i];
 				renderer.isSelected = renderer.groupIndex == this._selectedGroupIndex &&
 					renderer.itemIndex == this._selectedItemIndex;
 			}
-			for each(renderer in this._activeFirstItemRenderers)
+			if(this._activeFirstItemRenderers)
 			{
-				renderer.isSelected = renderer.groupIndex == this._selectedGroupIndex &&
-					renderer.itemIndex == this._selectedItemIndex;
+				rendererCount = this._activeFirstItemRenderers.length;
+				for(i = 0; i < rendererCount; i++)
+				{
+					renderer = this._activeFirstItemRenderers[i];
+					renderer.isSelected = renderer.groupIndex == this._selectedGroupIndex &&
+						renderer.itemIndex == this._selectedItemIndex;
+				}
 			}
-			for each(renderer in this._activeLastItemRenderers)
+			if(this._activeLastItemRenderers)
 			{
-				renderer.isSelected = renderer.groupIndex == this._selectedGroupIndex &&
-					renderer.itemIndex == this._selectedItemIndex;
+				rendererCount = this._activeLastItemRenderers.length;
+				for(i = 0; i < rendererCount; i++)
+				{
+					renderer = this._activeLastItemRenderers[i];
+					renderer.isSelected = renderer.groupIndex == this._selectedGroupIndex &&
+						renderer.itemIndex == this._selectedItemIndex;
+				}
 			}
-			for each(renderer in this._activeSingleItemRenderers)
+			if(this._activeSingleItemRenderers)
 			{
-				renderer.isSelected = renderer.groupIndex == this._selectedGroupIndex &&
-					renderer.itemIndex == this._selectedItemIndex;
+				rendererCount = this._activeSingleItemRenderers.length;
+				for(i = 0; i < rendererCount; i++)
+				{
+					renderer = this._activeSingleItemRenderers[i];
+					renderer.isSelected = renderer.groupIndex == this._selectedGroupIndex &&
+						renderer.itemIndex == this._selectedItemIndex;
+				}
 			}
 		}
 
@@ -1415,66 +1432,8 @@ package feathers.controls.supportClasses
 
 			this._headerIndices.length = 0;
 			this._footerIndices.length = 0;
-		}
 
-		private function refreshRenderers():void
-		{
-			if(this._typicalItemRenderer && this._typicalItemIsInDataProvider)
-			{
-				//this renderer is special and doesn't need to appear in the
-				//inactive renderers cache. in fact, if it did, it could be
-				//reused for other data, which we definitely don't want!
-
-				var inactiveIndex:int = this._inactiveItemRenderers.indexOf(this._typicalItemRenderer);
-				if(inactiveIndex >= 0)
-				{
-					this._inactiveItemRenderers.splice(inactiveIndex, 1);
-				}
-				else
-				{
-					if(this._inactiveSingleItemRenderers)
-					{
-						inactiveIndex = this._inactiveSingleItemRenderers.indexOf(this._typicalItemRenderer);
-					}
-					else
-					{
-						inactiveIndex = -1;
-					}
-					if(inactiveIndex >= 0)
-					{
-						this._inactiveSingleItemRenderers.splice(inactiveIndex, 1);
-					}
-					else
-					{
-						if(this._inactiveFirstItemRenderers)
-						{
-							inactiveIndex = this._inactiveFirstItemRenderers.indexOf(this._typicalItemRenderer);
-						}
-						else
-						{
-							inactiveIndex = -1;
-						}
-						if(inactiveIndex >= 0)
-						{
-							this._inactiveFirstItemRenderers.splice(inactiveIndex, 1);
-						}
-						//no else... can't be in inactive last item renderers
-					}
-				}
-			}
-
-			this.findUnrenderedData();
-			this.recoverInactiveRenderers();
-			this.renderUnrenderedData();
-			this.freeInactiveRenderers();
-		}
-
-		private function findUnrenderedData():void
-		{
 			const hasCustomFirstItemRenderer:Boolean = this._firstItemRendererType || this._firstItemRendererFactory != null || this._firstItemRendererName;
-			const hasCustomLastItemRenderer:Boolean = this._lastItemRendererType || this._lastItemRendererFactory != null || this._lastItemRendererName;
-			const hasCustomSingleItemRenderer:Boolean = this._singleItemRendererType || this._singleItemRendererFactory != null || this._singleItemRendererName;
-
 			if(hasCustomFirstItemRenderer)
 			{
 				if(!this._firstItemRendererMap)
@@ -1501,6 +1460,7 @@ package feathers.controls.supportClasses
 				this._activeFirstItemRenderers = null;
 				this._unrenderedFirstItems = null;
 			}
+			const hasCustomLastItemRenderer:Boolean = this._lastItemRendererType || this._lastItemRendererFactory != null || this._lastItemRendererName;
 			if(hasCustomLastItemRenderer)
 			{
 				if(!this._lastItemRendererMap)
@@ -1527,6 +1487,7 @@ package feathers.controls.supportClasses
 				this._activeLastItemRenderers = null;
 				this._unrenderedLastItems = null;
 			}
+			const hasCustomSingleItemRenderer:Boolean = this._singleItemRendererType || this._singleItemRendererFactory != null || this._singleItemRendererName;
 			if(hasCustomSingleItemRenderer)
 			{
 				if(!this._singleItemRendererMap)
@@ -1553,7 +1514,68 @@ package feathers.controls.supportClasses
 				this._activeSingleItemRenderers = null;
 				this._unrenderedSingleItems = null;
 			}
+		}
 
+		private function refreshRenderers():void
+		{
+			if(this._typicalItemRenderer && this._typicalItemIsInDataProvider)
+			{
+				var typicalItem:Object = this._typicalItemRenderer.data;
+				if(this._itemRendererMap[typicalItem] == this._typicalItemRenderer)
+				{
+					//this renderer is already is use by the typical item, so we
+					//don't want to allow it to be used by other items.
+					var inactiveIndex:int = this._inactiveItemRenderers.indexOf(this._typicalItemRenderer);
+					if(inactiveIndex >= 0)
+					{
+						this._inactiveItemRenderers.splice(inactiveIndex, 1);
+					}
+					//if refreshLayoutTypicalItem() was called, it will have already
+					//added the typical item renderer to the active renderers. if
+					//not, we need to do it here.
+					var activeRenderersCount:int = this._activeItemRenderers.length;
+					if(activeRenderersCount == 0)
+					{
+						this._activeItemRenderers[activeRenderersCount] = this._typicalItemRenderer;
+					}
+				}
+				else if(this._firstItemRendererMap && this._firstItemRendererMap[typicalItem] == this._typicalItemRenderer)
+				{
+					inactiveIndex = this._inactiveFirstItemRenderers.indexOf(this._typicalItemRenderer);
+					if(inactiveIndex >= 0)
+					{
+						this._inactiveFirstItemRenderers.splice(inactiveIndex, 1);
+					}
+					activeRenderersCount = this._activeFirstItemRenderers.length;
+					if(activeRenderersCount == 0)
+					{
+						this._activeFirstItemRenderers[activeRenderersCount] = this._typicalItemRenderer;
+					}
+				}
+				else if(this._singleItemRendererMap && this._singleItemRendererMap[typicalItem] == this._typicalItemRenderer)
+				{
+					inactiveIndex = this._inactiveSingleItemRenderers.indexOf(this._typicalItemRenderer);
+					if(inactiveIndex >= 0)
+					{
+						this._inactiveSingleItemRenderers.splice(inactiveIndex, 1);
+					}
+					activeRenderersCount = this._activeSingleItemRenderers.length;
+					if(activeRenderersCount == 0)
+					{
+						this._activeSingleItemRenderers[activeRenderersCount] = this._typicalItemRenderer;
+					}
+				}
+				//no else... can't be in last item renderers
+			}
+
+			this.findUnrenderedData();
+			this.recoverInactiveRenderers();
+			this.renderUnrenderedData();
+			this.freeInactiveRenderers();
+		}
+
+		private function findUnrenderedData():void
+		{
 			const groupCount:int = this._dataProvider ? this._dataProvider.getLength() : 0;
 			var totalLayoutCount:int = 0;
 			var totalHeaderCount:int = 0;
@@ -1595,26 +1617,39 @@ package feathers.controls.supportClasses
 
 				averageItemsPerGroup /= groupCount;
 
-				var typicalItemRenderer:IGroupedListItemRenderer = IGroupedListItemRenderer(virtualLayout.typicalItem);
-				var minimumTypicalItemEdge:Number = typicalItemRenderer.height;
-				if(typicalItemRenderer.width < minimumTypicalItemEdge)
+				if(this._typicalItemRenderer)
 				{
-					minimumTypicalItemEdge = typicalItemRenderer.width;
-				}
+					var minimumTypicalItemEdge:Number = this._typicalItemRenderer.height;
+					if(this._typicalItemRenderer.width < minimumTypicalItemEdge)
+					{
+						minimumTypicalItemEdge = this._typicalItemRenderer.width;
+					}
 
-				var maximumViewPortEdge:Number = viewPortWidth;
-				if(viewPortHeight > viewPortWidth)
+					var maximumViewPortEdge:Number = viewPortWidth;
+					if(viewPortHeight > viewPortWidth)
+					{
+						maximumViewPortEdge = viewPortHeight;
+					}
+					this._minimumFirstAndLastItemCount = this._minimumSingleItemCount = this._minimumHeaderCount = this._minimumFooterCount = Math.ceil(maximumViewPortEdge / (minimumTypicalItemEdge * averageItemsPerGroup));
+					this._minimumHeaderCount = Math.min(this._minimumHeaderCount, totalHeaderCount);
+					this._minimumFooterCount = Math.min(this._minimumFooterCount, totalFooterCount);
+					this._minimumSingleItemCount = Math.min(this._minimumSingleItemCount, totalSingleItemCount);
+
+					//assumes that zero headers/footers might be visible
+					this._minimumItemCount = Math.ceil(maximumViewPortEdge / minimumTypicalItemEdge) + 1;
+				}
+				else
 				{
-					maximumViewPortEdge = viewPortHeight;
+					this._minimumFirstAndLastItemCount = 1;
+					this._minimumHeaderCount = 1;
+					this._minimumFooterCount = 1;
+					this._minimumSingleItemCount = 1;
+					this._minimumItemCount = 1;
 				}
-				this._minimumFirstAndLastItemCount = this._minimumSingleItemCount = this._minimumHeaderCount = this._minimumFooterCount = Math.ceil(maximumViewPortEdge / (minimumTypicalItemEdge * averageItemsPerGroup));
-				this._minimumHeaderCount = Math.min(this._minimumHeaderCount, totalHeaderCount);
-				this._minimumFooterCount = Math.min(this._minimumFooterCount, totalFooterCount);
-				this._minimumSingleItemCount = Math.min(this._minimumSingleItemCount, totalSingleItemCount);
-
-				//assumes that zero headers/footers might be visible
-				this._minimumItemCount = Math.ceil(maximumViewPortEdge / minimumTypicalItemEdge) + 1;
 			}
+			const hasCustomFirstItemRenderer:Boolean = this._firstItemRendererType || this._firstItemRendererFactory != null || this._firstItemRendererName;
+			const hasCustomLastItemRenderer:Boolean = this._lastItemRendererType || this._lastItemRendererFactory != null || this._lastItemRendererName;
+			const hasCustomSingleItemRenderer:Boolean = this._singleItemRendererType || this._singleItemRendererFactory != null || this._singleItemRendererName;
 			var currentIndex:int = 0;
 			var unrenderedHeadersLastIndex:int = this._unrenderedHeaders.length;
 			var unrenderedFootersLastIndex:int = this._unrenderedFooters.length;

@@ -1433,7 +1433,8 @@ package feathers.controls.renderers
 				return;
 			}
 			this._iconLoaderFactory = value;
-			this.invalidate(INVALIDATION_FLAG_STYLES);
+			this.replaceIcon(null);
+			this.invalidate(INVALIDATION_FLAG_DATA);
 		}
 
 		/**
@@ -1482,7 +1483,8 @@ package feathers.controls.renderers
 				return;
 			}
 			this._accessoryLoaderFactory = value;
-			this.invalidate(INVALIDATION_FLAG_STYLES);
+			this.replaceAccessory(null);
+			this.invalidate(INVALIDATION_FLAG_DATA);
 		}
 
 		/**
@@ -1531,7 +1533,8 @@ package feathers.controls.renderers
 				return;
 			}
 			this._accessoryLabelFactory = value;
-			this.invalidate(INVALIDATION_FLAG_STYLES);
+			this.replaceAccessory(null);
+			this.invalidate(INVALIDATION_FLAG_DATA);
 		}
 
 		/**
@@ -2082,10 +2085,9 @@ package feathers.controls.renderers
 			if(this._iconSelector.defaultValue != newIcon)
 			{
 				this._iconSelector.defaultValue = newIcon;
-				//this feels kind of hacky, but we don't have another way of setting
-				//this invalidation flag without causing an unnecessary validation
-				//next frame.
-				this._invalidationFlags[INVALIDATION_FLAG_STYLES] = true;
+				//we don't need to do a full invalidation. the superclass will
+				//correctly see this flag when we call super.draw().
+				this.setInvalidationFlag(INVALIDATION_FLAG_STYLES);
 			}
 
 			if(this.iconImage)
