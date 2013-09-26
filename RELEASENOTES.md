@@ -10,6 +10,7 @@ Version 1.2.0 of Feathers is still in active development. This list of changes i
 * New Component: LayoutGroup
 * New Component: LayoutGroupListItemRenderer
 * Many performance improvements with the help of Adobe Scout.
+* New minimum runtime versions. Target SWF version rolled back to 18 (Flash Player 11.5 and AIR 3.5) to offer easier BlackBerry 10 support.
 
 ### 1.2.0 Deprecated APIs
 
@@ -81,12 +82,16 @@ This release includes minor updates to support Starling Framework 1.4 and a numb
 * Uses Texture onRestore for internally managed textures, like in text controls.
 * StageTextTextEditor: fix for displayAsPassword clearing the text.
 * Panel: won't scroll if mouse wheel or touch occurs in header or footer.
+* Panel: header and footer can be touched when content is scrolling.
 * AeonDesktopTheme: uses a better disabled text color.
 * SmartDisplayObjectStateValueSelector: properly supports uint color value of 0.
 * Item Renderers: smarter handling of accessory resizing.
 * Item Renderers: better measurement to account for NaN.
 * Item Renderers: properly checks for _data, in addition to _owner, in commitData().
+* Label: sets proper text renderer dimensions if height is explicitly set.
 * Radio: better handling of setting toggleGroup to avoid accidentally adding to defaultRadioGroup.
+* Scroller: properly updates isEnabled on scroll bars when they are first created.
+* Scroller: child touches are blocked until throw animation finishes to match native behavior.
 * Scroll bars: better isEnabled handling.
 * TextInput: better handling of focus when not visible.
 * TextInput: better prompt handling.
@@ -95,6 +100,7 @@ This release includes minor updates to support Starling Framework 1.4 and a numb
 * GroupedList: requests proper typical item from data provider.
 * ScrollText: better padding getter.
 * PickerList: closes pop-up list on Event.TRIGGERED.
+* PickerList: properly disposes pop-up list and IPopUpContentManager.
 * TiledRowsLayout, TiledColumnsLayout: fixed manageVisibility implementation.
 * TiledRowsLayout, TiledColumnsLayout: fixed bad positioning when useSquareTiles is true.
 
