@@ -198,6 +198,11 @@ package feathers.themes
 
 		protected var defaultTextFormat:TextFormat;
 		protected var disabledTextFormat:TextFormat;
+		protected var headingTextFormat:TextFormat;
+		protected var headingDisabledTextFormat:TextFormat;
+		protected var detailTextFormat:TextFormat;
+		protected var detailDisabledTextFormat:TextFormat;
+		protected var headerTitleTextFormat:TextFormat;
 
 		protected var focusIndicatorSkinTextures:Scale9Textures;
 
@@ -348,6 +353,11 @@ package feathers.themes
 
 			this.defaultTextFormat = new TextFormat("_sans", 11, PRIMARY_TEXT_COLOR, false, false, false, null, null, TextFormatAlign.LEFT, 0, 0, 0, 0);
 			this.disabledTextFormat = new TextFormat("_sans", 11, DISABLED_TEXT_COLOR, false, false, false, null, null, TextFormatAlign.LEFT, 0, 0, 0, 0);
+			this.headerTitleTextFormat = new TextFormat("_sans", 12, PRIMARY_TEXT_COLOR, false, false, false, null, null, TextFormatAlign.LEFT, 0, 0, 0, 0);
+			this.headingTextFormat = new TextFormat("_sans", 14, PRIMARY_TEXT_COLOR, false, false, false, null, null, TextFormatAlign.LEFT, 0, 0, 0, 0);
+			this.headingDisabledTextFormat = new TextFormat("_sans", 14, DISABLED_TEXT_COLOR, false, false, false, null, null, TextFormatAlign.LEFT, 0, 0, 0, 0);
+			this.detailTextFormat = new TextFormat("_sans", 10, PRIMARY_TEXT_COLOR, false, false, false, null, null, TextFormatAlign.LEFT, 0, 0, 0, 0);
+			this.detailDisabledTextFormat = new TextFormat("_sans", 10, DISABLED_TEXT_COLOR, false, false, false, null, null, TextFormatAlign.LEFT, 0, 0, 0, 0);
 
 			this.focusIndicatorSkinTextures = new Scale9Textures(this.atlas.getTexture("focus-indicator-skin"), FOCUS_INDICATOR_SCALE_9_GRID);
 
@@ -460,6 +470,8 @@ package feathers.themes
 			this.setInitializerForClassAndSubclasses(Screen, screenInitializer);
 			this.setInitializerForClassAndSubclasses(PanelScreen, panelScreenInitializer);
 			this.setInitializerForClass(Label, labelInitializer);
+			this.setInitializerForClass(Label, headingLabelInitializer, Label.ALTERNATE_NAME_HEADING);
+			this.setInitializerForClass(Label, detailLabelInitializer, Label.ALTERNATE_NAME_DETAIL);
 			this.setInitializerForClass(ScrollText, scrollTextInitializer);
 			this.setInitializerForClass(TextFieldTextRenderer, itemRendererAccessoryLabelInitializer, BaseDefaultItemRenderer.DEFAULT_CHILD_NAME_ACCESSORY_LABEL);
 			this.setInitializerForClass(TextFieldTextRenderer, alertMessageInitializer, Alert.DEFAULT_CHILD_NAME_MESSAGE);
@@ -554,6 +566,19 @@ package feathers.themes
 		protected function labelInitializer(label:Label):void
 		{
 			label.textRendererProperties.textFormat = this.defaultTextFormat;
+			label.textRendererProperties.disabledTextFormat = this.disabledTextFormat;
+		}
+
+		protected function headingLabelInitializer(label:Label):void
+		{
+			label.textRendererProperties.textFormat = this.headingTextFormat;
+			label.textRendererProperties.disabledTextFormat = this.headingDisabledTextFormat;
+		}
+
+		protected function detailLabelInitializer(label:Label):void
+		{
+			label.textRendererProperties.textFormat = this.detailTextFormat;
+			label.textRendererProperties.disabledTextFormat = this.detailDisabledTextFormat;
 		}
 
 		protected function scrollTextInitializer(text:ScrollText):void
@@ -1129,6 +1154,7 @@ package feathers.themes
 			alert.paddingRight = 14;
 			alert.paddingBottom = 0;
 			alert.paddingLeft = 14;
+			alert.gap = 12;
 
 			alert.interactionMode = ScrollContainer.INTERACTION_MODE_MOUSE;
 			alert.scrollBarDisplayMode = ScrollContainer.SCROLL_BAR_DISPLAY_MODE_FIXED;
@@ -1136,7 +1162,7 @@ package feathers.themes
 			alert.horizontalScrollBarFactory = scrollBarFactory;
 			alert.verticalScrollBarFactory = scrollBarFactory;
 
-			alert.maxWidth = alert.maxHeight = 560;
+			alert.maxWidth = alert.maxHeight = 300;
 		}
 
 		protected function listInitializer(list:List):void
@@ -1239,9 +1265,9 @@ package feathers.themes
 
 			header.minHeight = 22;
 
-			header.titleProperties.textFormat = this.defaultTextFormat;
+			header.titleProperties.textFormat = this.headerTitleTextFormat;
 
-			header.paddingTop = header.paddingBottom = 2;
+			header.paddingTop = header.paddingBottom = 4;
 			header.paddingRight = header.paddingLeft = 6;
 
 			header.gap = 2;
@@ -1250,7 +1276,7 @@ package feathers.themes
 
 		protected function panelHeaderInitializer(header:Header):void
 		{
-			header.titleProperties.textFormat = this.defaultTextFormat;
+			header.titleProperties.textFormat = this.headerTitleTextFormat;
 
 			header.minHeight = 22;
 
