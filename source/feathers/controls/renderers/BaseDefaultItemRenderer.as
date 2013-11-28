@@ -1550,10 +1550,9 @@ package feathers.controls.renderers
 		 *
 		 * <p>If the subcomponent has its own subcomponents, their properties
 		 * can be set too, using attribute <code>&#64;</code> notation. For example,
-		 * to set the skin on the thumb of a <code>SimpleScrollBar</code>
-		 * which is in a <code>Scroller</code> which is in a <code>List</code>,
-		 * you can use the following syntax:</p>
-		 * <pre>list.scrollerProperties.&#64;verticalScrollBarProperties.&#64;thumbProperties.defaultSkin = new Image(texture);</pre>
+		 * to set the skin on the thumb which is in a <code>SimpleScrollBar</code>,
+		 * which is in a <code>List</code>, you can use the following syntax:</p>
+		 * <pre>list.verticalScrollBarProperties.&#64;thumbProperties.defaultSkin = new Image(texture);</pre>
 		 *
 		 * <p>Setting properties in a <code>accessoryLabelFactory</code>
 		 * function instead of using <code>accessoryLabelProperties</code> will
@@ -1833,7 +1832,18 @@ package feathers.controls.renderers
 				{
 					newWidth = HELPER_POINT.x;
 				}
-				var adjustedGap:Number = this._gap == Number.POSITIVE_INFINITY ? Math.min(this._paddingLeft, this._paddingRight) : this._gap;
+				var adjustedGap:Number = this._gap;
+				if(this._gap == Number.POSITIVE_INFINITY)
+				{
+					if(this._paddingLeft < this._paddingRight)
+					{
+						adjustedGap = this._paddingLeft;
+					}
+					else
+					{
+						adjustedGap = this._paddingRight;
+					}
+				}
 				if(this._layoutOrder == LAYOUT_ORDER_LABEL_ACCESSORY_ICON)
 				{
 					newWidth = this.addAccessoryWidth(newWidth, adjustedGap);
@@ -1866,7 +1876,18 @@ package feathers.controls.renderers
 				{
 					newHeight = HELPER_POINT.y;
 				}
-				adjustedGap = this._gap == Number.POSITIVE_INFINITY ? Math.min(this._paddingTop, this._paddingBottom) : this._gap;
+				adjustedGap = this._gap;
+				if(this._gap == Number.POSITIVE_INFINITY)
+				{
+					if(this._paddingTop < this._paddingBottom)
+					{
+						adjustedGap = this._paddingTop;
+					}
+					else
+					{
+						adjustedGap = this._paddingBottom;
+					}
+				}
 				if(this._layoutOrder == LAYOUT_ORDER_LABEL_ACCESSORY_ICON)
 				{
 					newHeight = this.addAccessoryHeight(newHeight, adjustedGap);
@@ -1884,7 +1905,10 @@ package feathers.controls.renderers
 				}
 				else if(!isNaN(this._originalSkinHeight))
 				{
-					newHeight = Math.max(newHeight, this._originalSkinHeight);
+					if(this._originalSkinHeight > newHeight)
+					{
+						newHeight = this._originalSkinHeight;
+					}
 				}
 				if(isNaN(newHeight))
 				{
