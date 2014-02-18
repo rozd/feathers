@@ -3,6 +3,7 @@ package feathers.controls
 	import feathers.core.FeathersControl;
 	import feathers.core.IFeathersControl;
 	import feathers.core.ITextRenderer;
+	import feathers.core.IValidating;
 	import feathers.core.PopUpManager;
 	import feathers.core.PropertyProxy;
 	import feathers.data.ListCollection;
@@ -49,15 +50,6 @@ package feathers.controls
 	 *         { label: "OK" }
 	 *     ]);
 	 * }</listing>
-	 *
-	 * <p><strong>Beta Component:</strong> This is a new component, and its APIs
-	 * may need some changes between now and the next version of Feathers to
-	 * account for overlooked requirements or other issues. Upgrading to future
-	 * versions of Feathers may involve manual changes to your code that uses
-	 * this component. The
-	 * <a href="http://wiki.starling-framework.org/feathers/deprecation-policy">Feathers deprecation policy</a>
-	 * will not go into effect until this component's status is upgraded from
-	 * beta to stable.</p>
 	 *
 	 * @see http://wiki.starling-framework.org/feathers/alert
 	 */
@@ -386,7 +378,7 @@ package feathers.controls
 				return;
 			}
 			this._buttonsDataProvider = value;
-			this.invalidate(INVALIDATION_FLAG_DATA);
+			this.invalidate(INVALIDATION_FLAG_STYLES);
 		}
 
 		/**
@@ -675,9 +667,9 @@ package feathers.controls
 
 			if(this._icon)
 			{
-				if(this._icon is IFeathersControl)
+				if(this._icon is IValidating)
 				{
-					IFeathersControl(this._icon).validate();
+					IValidating(this._icon).validate();
 				}
 				this._icon.x = this._paddingLeft;
 				this._icon.y = this._topViewPortOffset + (this._viewPort.height - this._icon.height) / 2;
@@ -696,9 +688,9 @@ package feathers.controls
 				return false;
 			}
 
-			if(this._icon is IFeathersControl)
+			if(this._icon is IValidating)
 			{
-				IFeathersControl(this._icon).validate();
+				IValidating(this._icon).validate();
 			}
 
 			const oldHeaderWidth:Number = this.header.width;
@@ -878,9 +870,9 @@ package feathers.controls
 			super.calculateViewPortOffsets(forceScrollBars, useActualBounds);
 			if(this._icon)
 			{
-				if(this._icon is IFeathersControl)
+				if(this._icon is IValidating)
 				{
-					IFeathersControl(this._icon).validate();
+					IValidating(this._icon).validate();
 				}
 				if(!isNaN(this._icon.width))
 				{

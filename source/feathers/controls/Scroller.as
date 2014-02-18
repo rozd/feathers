@@ -1254,6 +1254,42 @@ package feathers.controls
 		/**
 		 * @private
 		 */
+		protected var _verticalMouseWheelScrollStep:Number = NaN;
+
+		/**
+		 * The number of pixels the scroller can be stepped vertically when
+		 * using the mouse wheel. If this value is <code>NaN</code>, the mouse
+		 * wheel will use the same scroll step as the scroll bars.
+		 *
+		 * <p>In the following example, the vertical mouse wheel scroll step is
+		 * customized:</p>
+		 *
+		 * <listing version="3.0">
+		 * scroller.verticalMouseWheelScrollStep = 10;</listing>
+		 *
+		 * @default NaN
+		 */
+		public function get verticalMouseWheelScrollStep():Number
+		{
+			return this._verticalMouseWheelScrollStep;
+		}
+
+		/**
+		 * @private
+		 */
+		public function set verticalMouseWheelScrollStep(value:Number):void
+		{
+			if(this._verticalMouseWheelScrollStep == value)
+			{
+				return;
+			}
+			this._verticalMouseWheelScrollStep = value;
+			this.invalidate(INVALIDATION_FLAG_SCROLL);
+		}
+
+		/**
+		 * @private
+		 */
 		protected var _targetVerticalScrollPosition:Number;
 
 		/**
@@ -1661,7 +1697,7 @@ package feathers.controls
 		 * <p>In the following example, the interaction mode is optimized for mouse:</p>
 		 *
 		 * <listing version="3.0">
-		 * scroller.scrollBarDisplayMode = Scroller.INTERACTION_MODE_MOUSE;</listing>
+		 * scroller.interactionMode = Scroller.INTERACTION_MODE_MOUSE;</listing>
 		 *
 		 * @default Scroller.INTERACTION_MODE_TOUCH
 		 *
@@ -2939,26 +2975,28 @@ package feathers.controls
 				this.actualVerticalScrollStep = this.explicitVerticalScrollStep;
 			}
 
+			var visibleViewPortWidth:Number = this.actualWidth - (this._leftViewPortOffset + this._rightViewPortOffset);
+			var visibleViewPortHeight:Number = this.actualHeight - (this._topViewPortOffset + this._bottomViewPortOffset);
 			if(isNaN(this.explicitPageWidth))
 			{
-				this.actualPageWidth = this.actualWidth - (this._leftViewPortOffset + this._rightViewPortOffset);
+				this.actualPageWidth = visibleViewPortWidth;
 			}
 			if(isNaN(this.explicitPageHeight))
 			{
-				this.actualPageHeight = this.actualHeight - (this._topViewPortOffset + this._bottomViewPortOffset);
+				this.actualPageHeight = visibleViewPortHeight;
 			}
 			const oldMaxHSP:Number = this._maxHorizontalScrollPosition;
 			const oldMaxVSP:Number = this._maxVerticalScrollPosition;
 			if(this._viewPort)
 			{
 				this._minHorizontalScrollPosition = this._viewPort.contentX;
-				this._maxHorizontalScrollPosition = this._viewPort.width - this.actualPageWidth;
+				this._maxHorizontalScrollPosition = this._viewPort.width - visibleViewPortWidth;
 				if(this._maxHorizontalScrollPosition < this._minHorizontalScrollPosition)
 				{
 					this._maxHorizontalScrollPosition = this._minHorizontalScrollPosition;
 				}
 				this._minVerticalScrollPosition = this._viewPort.contentY;
-				this._maxVerticalScrollPosition = this._viewPort.height - this.actualPageHeight;
+				this._maxVerticalScrollPosition = this._viewPort.height - visibleViewPortHeight;
 				if(this._maxVerticalScrollPosition < this._minVerticalScrollPosition)
 				{
 					this._maxVerticalScrollPosition =  this._minVerticalScrollPosition;
@@ -3108,8 +3146,8 @@ package feathers.controls
 		 */
 		protected function showOrHideChildren():void
 		{
-			const isFixed:Boolean = this._scrollBarDisplayMode == SCROLL_BAR_DISPLAY_MODE_FIXED;
-			const childCount:int = this.numChildren;
+			var isFixed:Boolean = this._scrollBarDisplayMode == SCROLL_BAR_DISPLAY_MODE_FIXED;
+			var childCount:int = this.numRawChildrenInternal;
 			if(this.verticalScrollBar)
 			{
 				this.verticalScrollBar.visible = !isFixed || this._hasVerticalScrollBar;
@@ -3406,6 +3444,18 @@ package feathers.controls
 			{
 				this._viewPort.clipRect = null;
 			}
+		}
+
+		/**
+		 * @private
+		 */
+		protected function get numRawChildrenInternal():int
+		{
+			if(this is IScrollContainer)
+			{
+				return IScrollContainer(this).numRawChildren;
+			}
+			return this.numChildren;
 		}
 
 		/**
@@ -4263,12 +4313,13 @@ package feathers.controls
 				return;
 			}
 
-			if(this._horizontalAutoScrollTween)
+			//if the scroll policy is off, we shouldn't stop this animation
+			if(this._horizontalAutoScrollTween && this._horizontalScrollPolicy != Scroller.SCROLL_POLICY_OFF)
 			{
 				Starling.juggler.remove(this._horizontalAutoScrollTween);
 				this._horizontalAutoScrollTween = null;
 			}
-			if(this._verticalAutoScrollTween)
+			if(this._verticalAutoScrollTween && this._verticalScrollPolicy != Scroller.SCROLL_POLICY_OFF)
 			{
 				Starling.juggler.remove(this._verticalAutoScrollTween);
 				this._verticalAutoScrollTween = null;
@@ -4502,9 +4553,15 @@ package feathers.controls
 				return;
 			}
 
-			const starlingViewPort:Rectangle = Starling.current.viewPort;
-			HELPER_POINT.x = (event.stageX - starlingViewPort.x) / Starling.contentScaleFactor;
-			HELPER_POINT.y = (event.stageY - starlingViewPort.y) / Starling.contentScaleFactor;
+			var nativeScaleFactor:Number = 1;
+			if(Starling.current.supportHighResolutions)
+			{
+				nativeScaleFactor = Starling.current.nativeStage.contentsScaleFactor;
+			}
+			var starlingViewPort:Rectangle = Starling.current.viewPort;
+			var scaleFactor:Number = nativeScaleFactor / Starling.contentScaleFactor;
+			HELPER_POINT.x = (event.stageX - starlingViewPort.x) / scaleFactor;
+			HELPER_POINT.y = (event.stageY - starlingViewPort.y) / scaleFactor;
 			if(this.contains(this.stage.hitTest(HELPER_POINT, true)))
 			{
 				this.globalToLocal(HELPER_POINT, HELPER_POINT);
@@ -4517,7 +4574,12 @@ package feathers.controls
 					return;
 				}
 				this.revealVerticalScrollBar();
-				var targetVerticalScrollPosition:Number = this._verticalScrollPosition - event.delta * this.actualVerticalScrollStep;
+				var scrollStep:Number = this._verticalMouseWheelScrollStep;
+				if(isNaN(scrollStep))
+				{
+					scrollStep = this.actualVerticalScrollStep;
+				}
+				var targetVerticalScrollPosition:Number = this._verticalScrollPosition - event.delta * scrollStep;
 				if(targetVerticalScrollPosition < this._minVerticalScrollPosition)
 				{
 					targetVerticalScrollPosition = this._minVerticalScrollPosition;
@@ -4657,6 +4719,11 @@ package feathers.controls
 		{
 			Starling.current.nativeStage.removeEventListener(MouseEvent.MOUSE_WHEEL, nativeStage_mouseWheelHandler);
 			Starling.current.nativeStage.removeEventListener("orientationChange", nativeStage_orientationChangeHandler);
+			if(this._touchPointID >= 0)
+			{
+				var exclusiveTouch:ExclusiveTouch = ExclusiveTouch.forStage(this.stage);
+				exclusiveTouch.removeEventListener(Event.CHANGE, exclusiveTouch_changeHandler);
+			}
 			this._touchPointID = -1;
 			this._horizontalScrollBarTouchPointID = -1;
 			this._verticalScrollBarTouchPointID = -1;

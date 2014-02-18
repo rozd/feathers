@@ -17,21 +17,21 @@ package feathers.controls
 	import starling.events.Event;
 
 	/**
-	 * A screen for use with <code>ScreenNavigator</code>, based on <code>Panel</code>
-	 * in order to provide a header and layout.
+	 * A screen for use with <code>ScreenNavigator</code>, based on
+	 * <code>ScrollContainer</code> in order to provide scrolling and layout.
 	 *
 	 * <p>This component is generally not instantiated directly. Instead it is
 	 * typically used as a super class for concrete implementations of screens.
 	 * With that in mind, no code example is included here.</p>
 	 *
-	 * <p>The following example provides a basic framework for a new panel screen:</p>
+	 * <p>The following example provides a basic framework for a new scroll screen:</p>
 	 *
 	 * <listing version="3.0">
 	 * package
 	 * {
-	 *     import feathers.controls.PanelScreen;
+	 *     import feathers.controls.ScrollScreen;
 	 *
-	 *     public class CustomScreen extends PanelScreen
+	 *     public class CustomScreen extends ScrollScreen
 	 *     {
 	 *         public function CustomScreen()
 	 *         {
@@ -47,20 +47,13 @@ package feathers.controls
 	 * }</listing>
 	 *
 	 * @see ScreenNavigator
-	 * @see ScrollScreen
+	 * @see PanelScreen
 	 * @see Screen
-	 * @see Panel
-	 * @see http://wiki.starling-framework.org/feathers/panel-screen
+	 * @see ScrollContainer
+	 * @see http://wiki.starling-framework.org/feathers/scroll-screen
 	 */
-	public class PanelScreen extends Panel implements IScreen
+	public class ScrollScreen extends ScrollContainer implements IScreen
 	{
-		/**
-		 * The default value added to the <code>nameList</code> of the header.
-		 *
-		 * @see feathers.core.IFeathersControl#nameList
-		 */
-		public static const DEFAULT_CHILD_NAME_HEADER:String = "feathers-panel-screen-header";
-
 		/**
 		 * @copy feathers.controls.Scroller#SCROLL_POLICY_AUTO
 		 *
@@ -144,13 +137,11 @@ package feathers.controls
 		/**
 		 * Constructor.
 		 */
-		public function PanelScreen()
+		public function ScrollScreen()
 		{
-			this.addEventListener(Event.ADDED_TO_STAGE, panelScreen_addedToStageHandler);
+			this.addEventListener(Event.ADDED_TO_STAGE, scrollScreen_addedToStageHandler);
 			super();
-			this.headerName = DEFAULT_CHILD_NAME_HEADER;
 			this.originalDPI = DeviceCapabilities.dpi;
-			this.clipContent = false;
 		}
 
 		/**
@@ -326,28 +317,28 @@ package feathers.controls
 		/**
 		 * @private
 		 */
-		protected function panelScreen_addedToStageHandler(event:Event):void
+		protected function scrollScreen_addedToStageHandler(event:Event):void
 		{
-			this.addEventListener(Event.REMOVED_FROM_STAGE, panelScreen_removedFromStageHandler);
+			this.addEventListener(Event.REMOVED_FROM_STAGE, scrollScreen_removedFromStageHandler);
 			//using priority here is a hack so that objects higher up in the
 			//display list have a chance to cancel the event first.
 			var priority:int = -getDisplayObjectDepthFromStage(this);
-			Starling.current.nativeStage.addEventListener(KeyboardEvent.KEY_DOWN, panelScreen_nativeStage_keyDownHandler, false, priority, true);
+			Starling.current.nativeStage.addEventListener(KeyboardEvent.KEY_DOWN, scrollScreen_nativeStage_keyDownHandler, false, priority, true);
 		}
 
 		/**
 		 * @private
 		 */
-		protected function panelScreen_removedFromStageHandler(event:Event):void
+		protected function scrollScreen_removedFromStageHandler(event:Event):void
 		{
-			this.removeEventListener(Event.REMOVED_FROM_STAGE, panelScreen_removedFromStageHandler);
-			Starling.current.nativeStage.removeEventListener(KeyboardEvent.KEY_DOWN, panelScreen_nativeStage_keyDownHandler);
+			this.removeEventListener(Event.REMOVED_FROM_STAGE, scrollScreen_removedFromStageHandler);
+			Starling.current.nativeStage.removeEventListener(KeyboardEvent.KEY_DOWN, scrollScreen_nativeStage_keyDownHandler);
 		}
 
 		/**
 		 * @private
 		 */
-		protected function panelScreen_nativeStage_keyDownHandler(event:KeyboardEvent):void
+		protected function scrollScreen_nativeStage_keyDownHandler(event:KeyboardEvent):void
 		{
 			if(event.isDefaultPrevented())
 			{

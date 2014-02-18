@@ -15,6 +15,8 @@ package feathers.controls.text
 	import flash.display.Sprite;
 	import flash.geom.Matrix;
 	import flash.geom.Point;
+	import flash.geom.Rectangle;
+	import flash.text.TextSnapshot;
 	import flash.text.engine.ContentElement;
 	import flash.text.engine.ElementFormat;
 	import flash.text.engine.FontDescription;
@@ -65,6 +67,11 @@ package feathers.controls.text
 		private static const HELPER_MATRIX:Matrix = new Matrix();
 
 		/**
+		 * @private
+		 */
+		private static const HELPER_RECTANGLE:Rectangle = new Rectangle();
+
+		/**
 		 * The text will be positioned to the left edge.
 		 *
 		 * @see #textAlign
@@ -90,6 +97,21 @@ package feathers.controls.text
 		 * This is enforced by the runtime.
 		 */
 		protected static const MAX_TEXT_LINE_WIDTH:Number = 1000000;
+
+		/**
+		 * @private
+		 */
+		protected static const LINE_FEED:String = "\n";
+
+		/**
+		 * @private
+		 */
+		protected static const CARRIAGE_RETURN:String = "\r";
+
+		/**
+		 * @private
+		 */
+		protected static const FUZZY_TRUNCATION_DIFFERENCE:Number = 0.000001;
 
 		/**
 		 * Constructor.
@@ -167,7 +189,17 @@ package feathers.controls.text
 		/**
 		 * @private
 		 */
+		protected var _truncationOffset:int = 0;
+
+		/**
+		 * @private
+		 */
 		protected var _textElement:TextElement;
+
+		/**
+		 * @private
+		 */
+		protected var _text:String;
 
 		/**
 		 * @inheritDoc
@@ -181,7 +213,7 @@ package feathers.controls.text
 		 */
 		public function get text():String
 		{
-			return this._textElement ? this._textElement.text : null;
+			return this._textElement ? this._text : null;
 		}
 
 		/**
@@ -189,18 +221,17 @@ package feathers.controls.text
 		 */
 		public function set text(value:String):void
 		{
-			var textElement:TextElement = this._textElement;
-			if(textElement && textElement.text == value)
+			if(this._text == value)
 			{
 				return;
 			}
-			if(!textElement)
+			this._text = value;
+			if(!this._textElement)
 			{
-				textElement = new TextElement(value);
-				this.content = textElement;
-				return;
+				this._textElement = new TextElement(value);
 			}
-			textElement.text = value;
+			this._textElement.text = value;
+			this.content = this._textElement;
 			this.invalidate(INVALIDATION_FLAG_DATA);
 		}
 
@@ -248,6 +279,10 @@ package feathers.controls.text
 			if(value is TextElement)
 			{
 				this._textElement = TextElement(value);
+			}
+			else
+			{
+				this._textElement = null;
 			}
 			this._content = value;
 			this.invalidate(INVALIDATION_FLAG_DATA);
@@ -402,6 +437,40 @@ package feathers.controls.text
 		}
 
 		/**
+		 * @private
+		 */
+		protected var _wordWrap:Boolean = false;
+
+		/**
+		 * Determines if the text wraps to the next line when it reaches the
+		 * width of the component.
+		 *
+		 * <p>In the following example, word wrap is enabled:</p>
+		 *
+		 * <listing version="3.0">
+		 * textRenderer.wordWrap = true;</listing>
+		 *
+		 * @default false
+		 */
+		public function get wordWrap():Boolean
+		{
+			return this._wordWrap;
+		}
+
+		/**
+		 * @private
+		 */
+		public function set wordWrap(value:Boolean):void
+		{
+			if(this._wordWrap == value)
+			{
+				return;
+			}
+			this._wordWrap = value;
+			this.invalidate(INVALIDATION_FLAG_STYLES);
+		}
+
+		/**
 		 * @inheritDoc
 		 */
 		public function get baseline():Number
@@ -410,8 +479,7 @@ package feathers.controls.text
 			{
 				return 0;
 			}
-			var line:TextLine = this._textLines[0];
-			return line.getBaselinePosition(TextBaseline.ROMAN);
+			return this._textLines[0].ascent;
 		}
 
 		/**
@@ -643,7 +711,7 @@ package feathers.controls.text
 		 * <p>In the following example, the tab stops changed:</p>
 		 *
 		 * <listing version="3.0">
-		 * textRenderer.tabStops = new <TabStop>[ new TabStop( TabAlignment.CENTER ) ];</listing>
+		 * textRenderer.tabStops = new &lt;TabStop&gt;[ new TabStop( TabAlignment.CENTER ) ];</listing>
 		 *
 		 * @default null
 		 *
@@ -841,6 +909,86 @@ package feathers.controls.text
 		/**
 		 * @private
 		 */
+		protected var _truncationText:String = "...";
+
+		/**
+		 * The text to display at the end of the label if it is truncated.
+		 *
+		 * <p>In the following example, the truncation text is changed:</p>
+		 *
+		 * <listing version="3.0">
+		 * textRenderer.truncationText = " [more]";</listing>
+		 *
+		 * @default "..."
+		 *
+		 * @see #truncateToFit
+		 */
+		public function get truncationText():String
+		{
+			return _truncationText;
+		}
+
+		/**
+		 * @private
+		 */
+		public function set truncationText(value:String):void
+		{
+			if(this._truncationText == value)
+			{
+				return;
+			}
+			this._truncationText = value;
+			this.invalidate(INVALIDATION_FLAG_DATA);
+		}
+
+		/**
+		 * @private
+		 */
+		protected var _truncateToFit:Boolean = true;
+
+		/**
+		 * If word wrap is disabled, and the text is longer than the width of
+		 * the label, the text may be truncated using <code>truncationText</code>.
+		 *
+		 * <p>This feature may be disabled to improve performance.</p>
+		 *
+		 * <p>This feature only works when the <code>text</code> property is
+		 * set to a string value. If the <code>content</code> property is set
+		 * instead, then the content will not be truncated.</p>
+		 *
+		 * <p>This feature does not currently support the truncation of text
+		 * displayed on multiple lines.</p>
+		 *
+		 * <p>In the following example, truncation is disabled:</p>
+		 *
+		 * <listing version="3.0">
+		 * textRenderer.truncateToFit = false;</listing>
+		 *
+		 * @default true
+		 *
+		 * @see #truncationText
+		 */
+		public function get truncateToFit():Boolean
+		{
+			return _truncateToFit;
+		}
+
+		/**
+		 * @private
+		 */
+		public function set truncateToFit(value:Boolean):void
+		{
+			if(this._truncateToFit == value)
+			{
+				return;
+			}
+			this._truncateToFit = value;
+			this.invalidate(INVALIDATION_FLAG_DATA);
+		}
+
+		/**
+		 * @private
+		 */
 		override public function dispose():void
 		{
 			this.disposeContent();
@@ -1006,6 +1154,10 @@ package feathers.controls.text
 			if(needsWidth)
 			{
 				newWidth = this._measurementTextLineContainer.width;
+				if(newWidth > this._maxWidth)
+				{
+					newWidth = this._maxWidth;
+				}
 			}
 			if(needsHeight)
 			{
@@ -1117,10 +1269,13 @@ package feathers.controls.text
 			{
 				return;
 			}
+			var scaleFactor:Number = Starling.contentScaleFactor;
 			HELPER_MATRIX.identity();
-			HELPER_MATRIX.scale(Starling.contentScaleFactor, Starling.contentScaleFactor);
+			HELPER_MATRIX.scale(scaleFactor, scaleFactor);
 			var totalBitmapWidth:Number = this._snapshotWidth;
 			var totalBitmapHeight:Number = this._snapshotHeight;
+			var clipWidth:Number = this.actualWidth * scaleFactor;
+			var clipHeight:Number = this.actualHeight * scaleFactor;
 			var xPosition:Number = 0;
 			var yPosition:Number = 0;
 			var bitmapData:BitmapData;
@@ -1154,11 +1309,12 @@ package feathers.controls.text
 					}
 					HELPER_MATRIX.tx = -xPosition;
 					HELPER_MATRIX.ty = -yPosition;
-					bitmapData.draw(this._textLineContainer, HELPER_MATRIX);
+					HELPER_RECTANGLE.setTo(0, 0, clipWidth, clipHeight);
+					bitmapData.draw(this._textLineContainer, HELPER_MATRIX, null, null, HELPER_RECTANGLE);
 					var newTexture:Texture;
 					if(!this.textSnapshot || this._needsNewTexture)
 					{
-						newTexture = Texture.fromBitmapData(bitmapData, false, false, Starling.contentScaleFactor);
+						newTexture = Texture.fromBitmapData(bitmapData, false, false, scaleFactor);
 						newTexture.root.onRestore = texture_onRestore;
 					}
 					var snapshot:Image = null;
@@ -1206,16 +1362,19 @@ package feathers.controls.text
 					{
 						this.textSnapshot = snapshot;
 					}
-					snapshot.x = xPosition;
-					snapshot.y = yPosition;
+					snapshot.x = xPosition / scaleFactor;
+					snapshot.y = yPosition / scaleFactor;
 					snapshotIndex++;
 					yPosition += currentBitmapHeight;
 					totalBitmapHeight -= currentBitmapHeight;
+					clipHeight -= currentBitmapHeight;
 				}
 				while(totalBitmapHeight > 0)
 				xPosition += currentBitmapWidth;
 				totalBitmapWidth -= currentBitmapWidth;
+				clipWidth -= currentBitmapWidth;
 				yPosition = 0;
+				clipHeight = this.actualHeight * scaleFactor;
 				totalBitmapHeight = this._snapshotHeight;
 			}
 			while(totalBitmapWidth > 0)
@@ -1277,6 +1436,11 @@ package feathers.controls.text
 		 */
 		protected function refreshTextLines(textLines:Vector.<TextLine>, textLineParent:DisplayObjectContainer, width:Number, height:Number):void
 		{
+			if(this._textElement)
+			{
+				this._textElement.text = this._text;
+				this._truncationOffset = 0;
+			}
 			var textLineCache:Vector.<TextLine>;
 			var yPosition:Number = 0;
 			var lineCount:int = textLines.length;
@@ -1304,43 +1468,92 @@ package feathers.controls.text
 				}
 			}
 
-			var pushIndex:int = textLines.length;
-			var inactiveTextLineCount:int = textLineCache ? textLineCache.length : 0;
-			while(true)
+			if(width >= 0)
 			{
-				if(inactiveTextLineCount > 0)
+				var lineStartIndex:int = 0;
+				var canTruncate:Boolean = this._truncateToFit && this._textElement && !this._wordWrap;
+				var pushIndex:int = textLines.length;
+				var inactiveTextLineCount:int = textLineCache ? textLineCache.length : 0;
+				while(true)
 				{
-					var inactiveLine:TextLine = textLineCache[0];
-					line = this.textBlock.recreateTextLine(inactiveLine, line, width);
-					if(line)
+					var previousLine:TextLine = line;
+					var lineWidth:Number = width;
+					if(!this._wordWrap)
 					{
-						textLineCache.shift();
-						inactiveTextLineCount--;
+						lineWidth = MAX_TEXT_LINE_WIDTH;
 					}
-				}
-				else
-				{
-					line = this.textBlock.createTextLine(line, width);
-					if(line)
+					if(inactiveTextLineCount > 0)
 					{
-						textLineParent.addChild(line);
+						var inactiveLine:TextLine = textLineCache[0];
+						line = this.textBlock.recreateTextLine(inactiveLine, previousLine, lineWidth, 0, true);
+						if(line)
+						{
+							textLineCache.shift();
+							inactiveTextLineCount--;
+						}
 					}
+					else
+					{
+						line = this.textBlock.createTextLine(previousLine, lineWidth, 0, true);
+						if(line)
+						{
+							textLineParent.addChild(line);
+						}
+					}
+					if(!line)
+					{
+						//end of text
+						break;
+					}
+					var lineLength:int = line.rawTextLength;
+					var isTruncated:Boolean = false;
+					var difference:Number = 0;
+					while(canTruncate && (difference = line.width - width) > FUZZY_TRUNCATION_DIFFERENCE)
+					{
+						isTruncated = true;
+						if(this._truncationOffset == 0)
+						{
+							//this will quickly skip all of the characters after
+							//the maximum width of the line, instead of going
+							//one by one.
+							var endIndex:int = line.getAtomIndexAtPoint(width, 0);
+							if(endIndex >= 0)
+							{
+								this._truncationOffset = line.rawTextLength - endIndex;
+							}
+						}
+						this._truncationOffset++;
+						var truncatedTextLength:int = lineLength - this._truncationOffset;
+						//we want to start at this line so that the previous
+						//lines don't become invalid.
+						this._textElement.text = this._text.substr(lineStartIndex, truncatedTextLength) + this._truncationText;
+						var lineBreakIndex:int = this._text.indexOf(LINE_FEED, lineStartIndex);
+						if(lineBreakIndex < 0)
+						{
+							lineBreakIndex = this._text.indexOf(CARRIAGE_RETURN, lineStartIndex);
+						}
+						if(lineBreakIndex >= 0)
+						{
+							this._textElement.text += this._text.substr(lineBreakIndex);
+						}
+						line = this.textBlock.recreateTextLine(line, null, lineWidth, 0, true);
+						if(truncatedTextLength == 0)
+						{
+							break;
+						}
+					}
+					if(pushIndex > 0)
+					{
+						yPosition += this._leading;
+					}
+					yPosition += line.ascent;
+					line.y = yPosition;
+					yPosition += line.descent;
+					line.filters = this._nativeFilters;
+					textLines[pushIndex] = line;
+					pushIndex++;
+					lineStartIndex += lineLength;
 				}
-				if(!line)
-				{
-					//end of text
-					break;
-				}
-				if(pushIndex > 0)
-				{
-					yPosition += this._leading;
-				}
-				yPosition += line.ascent;
-				line.y = yPosition;
-				yPosition += line.descent;
-				line.filters = this._nativeFilters;
-				textLines[pushIndex] = line;
-				pushIndex++;
 			}
 
 			lineCount = textLines.length;

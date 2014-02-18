@@ -12,6 +12,7 @@ package feathers.controls
 	import feathers.core.IFocusDisplayObject;
 	import feathers.core.ITextRenderer;
 	import feathers.core.IToggle;
+	import feathers.core.IValidating;
 	import feathers.core.PropertyProxy;
 	import feathers.events.FeathersEventType;
 	import feathers.skins.StateWithToggleValueSelector;
@@ -320,6 +321,8 @@ package feathers.controls
 		
 		/**
 		 * The icon and label will be aligned vertically to the top edge of the button.
+		 *
+		 * @see #verticalAlign
 		 */
 		public static const VERTICAL_ALIGN_TOP:String = "top";
 		
@@ -2731,10 +2734,6 @@ package feathers.controls
 			}
 			this.refreshMaxLabelWidth(true);
 			this.labelTextRenderer.measureText(HELPER_POINT);
-			if(this.currentIcon is IFeathersControl)
-			{
-				IFeathersControl(this.currentIcon).validate();
-			}
 			var newWidth:Number = this.explicitWidth;
 			if(needsWidth)
 			{
@@ -2884,9 +2883,9 @@ package feathers.controls
 			}
 			if(this.currentSkin && (isNaN(this._originalSkinWidth) || isNaN(this._originalSkinHeight)))
 			{
-				if(this.currentSkin is IFeathersControl)
+				if(this.currentSkin is IValidating)
 				{
-					IFeathersControl(this.currentSkin).validate();
+					IValidating(this.currentSkin).validate();
 				}
 				this._originalSkinWidth = this.currentSkin.width;
 				this._originalSkinHeight = this.currentSkin.height;
@@ -2981,10 +2980,6 @@ package feathers.controls
 		 */
 		protected function layoutContent():void
 		{
-			if(this.currentIcon is IFeathersControl)
-			{
-				IFeathersControl(this.currentIcon).validate();
-			}
 			this.refreshMaxLabelWidth(false);
 			if(this._label && this.currentIcon)
 			{
@@ -3028,6 +3023,10 @@ package feathers.controls
 		 */
 		protected function refreshMaxLabelWidth(forMeasurement:Boolean):void
 		{
+			if(this.currentIcon is IValidating)
+			{
+				IValidating(this.currentIcon).validate();
+			}
 			var calculatedWidth:Number = this.actualWidth;
 			if(forMeasurement)
 			{
@@ -3340,7 +3339,7 @@ package feathers.controls
 		 */
 		protected function longPress_enterFrameHandler(event:Event):void
 		{
-			const accumulatedTime:int = (getTimer() - this._touchBeginTime) / 1000;
+			var accumulatedTime:Number = (getTimer() - this._touchBeginTime) / 1000;
 			if(accumulatedTime >= this._longPressDuration)
 			{
 				this.removeEventListener(Event.ENTER_FRAME, longPress_enterFrameHandler);

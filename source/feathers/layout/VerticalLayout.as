@@ -8,6 +8,7 @@ accordance with the terms of the accompanying license agreement.
 package feathers.layout
 {
 	import feathers.core.IFeathersControl;
+	import feathers.core.IValidating;
 
 	import flash.errors.IllegalOperationError;
 	import flash.geom.Point;
@@ -489,6 +490,11 @@ package feathers.layout
 		}
 
 		/**
+		 * @private
+		 */
+		protected var _manageVisibility:Boolean = false;
+
+		/**
 		 * Determines if items will be set invisible if they are outside the
 		 * view port. Can improve performance, especially for non-virtual
 		 * layouts. If <code>true</code>, you will not be able to manually
@@ -496,7 +502,23 @@ package feathers.layout
 		 *
 		 * @default false
 		 */
-		public var manageVisibility:Boolean = false;
+		public function get manageVisibility():Boolean
+		{
+			return this._manageVisibility;
+		}
+
+		/**
+		 * @private
+		 */
+		public function set manageVisibility(value:Boolean):void
+		{
+			if(this._manageVisibility == value)
+			{
+				return;
+			}
+			this._manageVisibility = value;
+			this.dispatchEventWith(Event.CHANGE);
+		}
 
 		/**
 		 * @private
@@ -739,6 +761,14 @@ package feathers.layout
 		public function set scrollPositionVerticalAlign(value:String):void
 		{
 			this._scrollPositionVerticalAlign = value;
+		}
+
+		/**
+		 * @inheritDoc
+		 */
+		public function get requiresLayoutOnScroll():Boolean
+		{
+			return this._manageVisibility || this._useVirtualLayout;
 		}
 
 		/**
@@ -1306,6 +1336,8 @@ package feathers.layout
 			var hasFirstGap:Boolean = !isNaN(this._firstGap);
 			var hasLastGap:Boolean = !isNaN(this._lastGap);
 			var positionY:Number = y + this._paddingTop;
+			var lastHeight:Number = 0;
+			var gap:Number = this._gap;
 			var startIndexOffset:int = 0;
 			var endIndexOffset:Number = 0;
 			var itemCount:int = items.length;
@@ -1313,24 +1345,31 @@ package feathers.layout
 			if(this._useVirtualLayout && !this._hasVariableItemDimensions)
 			{
 				totalItemCount += this._beforeVirtualizedItemCount + this._afterVirtualizedItemCount;
-				startIndexOffset = this._beforeVirtualizedItemCount;
-				positionY += (this._beforeVirtualizedItemCount * (calculatedTypicalItemHeight + this._gap));
-
-				endIndexOffset = index - items.length - this._beforeVirtualizedItemCount + 1;
-				if(endIndexOffset < 0)
+				if(index < this._beforeVirtualizedItemCount)
 				{
-					endIndexOffset = 0;
+					//this makes it skip the loop below
+					startIndexOffset = index + 1;
+					lastHeight = calculatedTypicalItemHeight;
+					gap = this._gap;
 				}
-				positionY += (endIndexOffset * (calculatedTypicalItemHeight + this._gap));
+				else
+				{
+					startIndexOffset = this._beforeVirtualizedItemCount;
+					endIndexOffset = index - items.length - this._beforeVirtualizedItemCount + 1;
+					if(endIndexOffset < 0)
+					{
+						endIndexOffset = 0;
+					}
+					positionY += (endIndexOffset * (calculatedTypicalItemHeight + this._gap));
+				}
+				positionY += (startIndexOffset * (calculatedTypicalItemHeight + this._gap));
 			}
 			index -= (startIndexOffset + endIndexOffset);
 			var secondToLastIndex:int = totalItemCount - 2;
-			var lastHeight:Number = 0;
 			for(var i:int = 0; i <= index; i++)
 			{
 				var item:DisplayObject = items[i];
 				var iNormalized:int = i + startIndexOffset;
-				var gap:Number = this._gap;
 				if(hasFirstGap && iNormalized == 0)
 				{
 					gap = this._firstGap;
@@ -1338,6 +1377,10 @@ package feathers.layout
 				else if(hasLastGap && iNormalized > 0 && iNormalized == secondToLastIndex)
 				{
 					gap = this._lastGap;
+				}
+				else
+				{
+					gap = this._gap;
 				}
 				if(this._useVirtualLayout && this._hasVariableItemDimensions)
 				{
@@ -1417,9 +1460,9 @@ package feathers.layout
 				{
 					item.height = distributedHeight;
 				}
-				if(item is IFeathersControl)
+				if(item is IValidating)
 				{
-					IFeathersControl(item).validate()
+					IValidating(item).validate()
 				}
 			}
 		}
@@ -1445,9 +1488,9 @@ package feathers.layout
 			{
 				this._typicalItem.height = this._typicalItemHeight;
 			}
-			if(this._typicalItem is IFeathersControl)
+			if(this._typicalItem is IValidating)
 			{
-				IFeathersControl(this._typicalItem).validate();
+				IValidating(this._typicalItem).validate();
 			}
 		}
 

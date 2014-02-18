@@ -236,16 +236,6 @@ package feathers.controls.text
 		/**
 		 * @private
 		 */
-		protected var _oldGlobalX:Number = 0;
-
-		/**
-		 * @private
-		 */
-		protected var _oldGlobalY:Number = 0;
-
-		/**
-		 * @private
-		 */
 		protected var _autoCapitalize:String = "none";
 
 		/**
@@ -803,19 +793,35 @@ package feathers.controls.text
 			HELPER_POINT.x = HELPER_POINT.y = 0;
 			this.getTransformationMatrix(this.stage, HELPER_MATRIX);
 			MatrixUtil.transformCoords(HELPER_MATRIX, 0, 0, HELPER_POINT);
-			if(HELPER_POINT.x != this._oldGlobalX || HELPER_POINT.y != this._oldGlobalY)
+			const starlingViewPort:Rectangle = Starling.current.viewPort;
+			var stageTextViewPort:Rectangle = this.stageText.viewPort;
+			if(!stageTextViewPort)
 			{
-				this._oldGlobalX = HELPER_POINT.x;
-				this._oldGlobalY = HELPER_POINT.y;
-				const starlingViewPort:Rectangle = Starling.current.viewPort;
-				var stageTextViewPort:Rectangle = this.stageText.viewPort;
-				if(!stageTextViewPort)
+				stageTextViewPort = new Rectangle();
+			}
+			var nativeScaleFactor:Number = 1;
+			if(Starling.current.supportHighResolutions)
+			{
+				nativeScaleFactor = Starling.current.nativeStage.contentsScaleFactor;
+			}
+			var scaleFactor:Number = Starling.contentScaleFactor / nativeScaleFactor;
+			stageTextViewPort.x = Math.round(starlingViewPort.x + (HELPER_POINT.x * scaleFactor));
+			stageTextViewPort.y = Math.round(starlingViewPort.y + (HELPER_POINT.y * scaleFactor));
+			this.stageText.viewPort = stageTextViewPort;
+
+			if(this.stageText.visible)
+			{
+				this.getTransformationMatrix(this.stage, HELPER_MATRIX);
+				var globalScaleX:Number = matrixToScaleX(HELPER_MATRIX);
+				var globalScaleY:Number = matrixToScaleY(HELPER_MATRIX);
+				var smallerGlobalScale:Number = globalScaleX;
+				if(globalScaleY < globalScaleX)
 				{
-					stageTextViewPort = new Rectangle();
+					smallerGlobalScale = globalScaleY;
 				}
-				stageTextViewPort.x = Math.round(starlingViewPort.x + (HELPER_POINT.x * Starling.contentScaleFactor));
-				stageTextViewPort.y = Math.round(starlingViewPort.y + (HELPER_POINT.y * Starling.contentScaleFactor));
-				this.stageText.viewPort = stageTextViewPort;
+				//for some reason, we don't need to account for the native scale factor here
+				scaleFactor = Starling.contentScaleFactor;
+				this.stageText.fontSize = this._fontSize * scaleFactor * smallerGlobalScale;
 			}
 
 			if(this.textSnapshot)
@@ -1091,11 +1097,8 @@ package feathers.controls.text
 				{
 					this.textSnapshot.visible = !this._stageTextHasFocus;
 					this.textSnapshot.alpha = hasText ? 1 : 0;
-					if(!this._stageTextHasFocus)
-					{
-						this.stageText.visible = false;
-					}
 				}
+				this.stageText.visible = false;
 			}
 
 			this.doPendingActions();
@@ -1190,7 +1193,9 @@ package feathers.controls.text
 			{
 				smallerGlobalScale = globalScaleY;
 			}
-			this.stageText.fontSize = this._fontSize * Starling.contentScaleFactor * smallerGlobalScale;
+			//for some reason, we don't need to account for the native scale factor here
+			var scaleFactor:Number = Starling.contentScaleFactor;
+			this.stageText.fontSize = this._fontSize * scaleFactor * smallerGlobalScale;
 
 			this.stageText.fontWeight = this._fontWeight;
 			this.stageText.locale = this._locale;
@@ -1231,10 +1236,10 @@ package feathers.controls.text
 			{
 				this.textSnapshot.visible = !this._stageTextHasFocus;
 				this.textSnapshot.alpha = this._text.length > 0 ? 1 : 0;
-				if(!this._stageTextHasFocus)
-				{
-					this.stageText.visible = false;
-				}
+			}
+			if(!this._stageTextHasFocus)
+			{
+				this.stageText.visible = false;
 			}
 		}
 
@@ -1308,16 +1313,20 @@ package feathers.controls.text
 			var globalScaleX:Number = matrixToScaleX(HELPER_MATRIX);
 			var globalScaleY:Number = matrixToScaleY(HELPER_MATRIX);
 			MatrixUtil.transformCoords(HELPER_MATRIX, 0, 0, HELPER_POINT);
-			this._oldGlobalX = HELPER_POINT.x;
-			this._oldGlobalY = HELPER_POINT.y;
-			stageTextViewPort.x = Math.round(starlingViewPort.x + HELPER_POINT.x * Starling.contentScaleFactor);
-			stageTextViewPort.y = Math.round(starlingViewPort.y + HELPER_POINT.y * Starling.contentScaleFactor);
-			var viewPortWidth:Number = Math.round(this.actualWidth * Starling.contentScaleFactor * globalScaleX);
+			var nativeScaleFactor:Number = 1;
+			if(Starling.current.supportHighResolutions)
+			{
+				nativeScaleFactor = Starling.current.nativeStage.contentsScaleFactor;
+			}
+			var scaleFactor:Number = Starling.contentScaleFactor / nativeScaleFactor;
+			stageTextViewPort.x = Math.round(starlingViewPort.x + HELPER_POINT.x * scaleFactor);
+			stageTextViewPort.y = Math.round(starlingViewPort.y + HELPER_POINT.y * scaleFactor);
+			var viewPortWidth:Number = Math.round(this.actualWidth * scaleFactor * globalScaleX);
 			if(viewPortWidth < 1 || isNaN(viewPortWidth))
 			{
 				viewPortWidth = 1;
 			}
-			var viewPortHeight:Number = Math.round(this.actualHeight * Starling.contentScaleFactor * globalScaleY);
+			var viewPortHeight:Number = Math.round(this.actualHeight * scaleFactor * globalScaleY);
 			if(viewPortHeight < 1 || isNaN(viewPortHeight))
 			{
 				viewPortHeight = 1;

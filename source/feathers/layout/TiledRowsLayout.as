@@ -8,6 +8,7 @@ accordance with the terms of the accompanying license agreement.
 package feathers.layout
 {
 	import feathers.core.IFeathersControl;
+	import feathers.core.IValidating;
 
 	import flash.errors.IllegalOperationError;
 	import flash.geom.Point;
@@ -603,6 +604,11 @@ package feathers.layout
 		}
 
 		/**
+		 * @private
+		 */
+		protected var _manageVisibility:Boolean = false;
+
+		/**
 		 * Determines if items will be set invisible if they are outside the
 		 * view port. Can improve performance, especially for non-virtual
 		 * layouts. If <code>true</code>, you will not be able to manually
@@ -610,7 +616,23 @@ package feathers.layout
 		 *
 		 * @default false
 		 */
-		public var manageVisibility:Boolean = false;
+		public function get manageVisibility():Boolean
+		{
+			return this._manageVisibility;
+		}
+
+		/**
+		 * @private
+		 */
+		public function set manageVisibility(value:Boolean):void
+		{
+			if(this._manageVisibility == value)
+			{
+				return;
+			}
+			this._manageVisibility = value;
+			this.dispatchEventWith(Event.CHANGE);
+		}
 
 		/**
 		 * @private
@@ -801,6 +823,14 @@ package feathers.layout
 		/**
 		 * @inheritDoc
 		 */
+		public function get requiresLayoutOnScroll():Boolean
+		{
+			return this._manageVisibility || this._useVirtualLayout;
+		}
+
+		/**
+		 * @inheritDoc
+		 */
 		public function layout(items:Vector.<DisplayObject>, viewPortBounds:ViewPortBounds = null, result:LayoutBoundsResult = null):LayoutBoundsResult
 		{
 			if(!result)
@@ -809,6 +839,8 @@ package feathers.layout
 			}
 			if(items.length == 0)
 			{
+				result.contentX = 0;
+				result.contentY = 0;
 				result.contentWidth = 0;
 				result.contentHeight = 0;
 				result.viewPortWidth = 0;
@@ -1104,6 +1136,8 @@ package feathers.layout
 			}
 			this._discoveredItemsCache.length = 0;
 
+			result.contentX = 0;
+			result.contentY = 0;
 			result.contentWidth = totalWidth;
 			result.contentHeight = totalHeight;
 			result.viewPortWidth = availableWidth;
@@ -1855,11 +1889,10 @@ package feathers.layout
 				{
 					continue;
 				}
-				if(!(item is IFeathersControl))
+				if(item is IValidating)
 				{
-					continue;
+					IValidating(item).validate();
 				}
-				IFeathersControl(item).validate();
 			}
 		}
 
@@ -1877,9 +1910,9 @@ package feathers.layout
 				this._typicalItem.width = this._typicalItemWidth;
 				this._typicalItem.height = this._typicalItemHeight;
 			}
-			if(this._typicalItem is IFeathersControl)
+			if(this._typicalItem is IValidating)
 			{
-				IFeathersControl(this._typicalItem).validate();
+				IValidating(this._typicalItem).validate();
 			}
 		}
 	}

@@ -9,6 +9,7 @@ package feathers.controls
 {
 	import feathers.core.FeathersControl;
 	import feathers.core.IFeathersControl;
+	import feathers.core.IValidating;
 	import feathers.events.ExclusiveTouch;
 	import feathers.events.FeathersEventType;
 	import feathers.system.DeviceCapabilities;
@@ -54,6 +55,22 @@ package feathers.controls
 	[Event(name="endInteraction",type="starling.events.Event")]
 
 	/**
+	 * Dispatched when the a drawer has completed opening.
+	 *
+	 * @eventType starling.events.Event.OPEN
+	 * @see starling.events.Event.CLOSE
+	 */
+	[Event(name="open",type="starling.events.Event")]
+
+	/**
+	 * Dispatched when the a drawer has completed closing.
+	 *
+	 * @eventType starling.events.Event.CLOSE
+	 * @see starling.events.Event.OPEN
+	 */
+	[Event(name="close",type="starling.events.Event")]
+
+	/**
 	 * A container that displays primary content in the center surrounded by
 	 * optional "drawers" that can open and close on the edges. Useful for
 	 * mobile-style app menus that slide open from the side of the screen.
@@ -82,15 +99,6 @@ package feathers.controls
 	 * component dispatches an event of type <code>Event.OPEN</code> when it
 	 * wants to display the slide out the <code>List</code> that is used as
 	 * the left drawer.</p>
-	 *
-	 * <p><strong>Beta Component:</strong> This is a new component, and its APIs
-	 * may need some changes between now and the next version of Feathers to
-	 * account for overlooked requirements or other issues. Upgrading to future
-	 * versions of Feathers may involve manual changes to your code that uses
-	 * this component. The
-	 * <a href="http://wiki.starling-framework.org/feathers/deprecation-policy">Feathers deprecation policy</a>
-	 * will not go into effect until this component's status is upgraded from
-	 * beta to stable.</p>
 	 *
 	 * @see http://wiki.starling-framework.org/feathers/drawers
 	 */
@@ -379,6 +387,7 @@ package feathers.controls
 			if(this._topDrawer)
 			{
 				this._topDrawer.visible = false;
+				this._topDrawer.addEventListener(FeathersEventType.RESIZE, drawer_resizeHandler);
 				this.addChildAt(this._topDrawer, 0);
 			}
 			this.invalidate(INVALIDATION_FLAG_DATA);
@@ -580,6 +589,7 @@ package feathers.controls
 			if(this._rightDrawer)
 			{
 				this._rightDrawer.visible = false;
+				this._rightDrawer.addEventListener(FeathersEventType.RESIZE, drawer_resizeHandler);
 				this.addChildAt(this._rightDrawer, 0);
 			}
 			this.invalidate(INVALIDATION_FLAG_DATA);
@@ -781,6 +791,7 @@ package feathers.controls
 			if(this._bottomDrawer)
 			{
 				this._bottomDrawer.visible = false;
+				this._bottomDrawer.addEventListener(FeathersEventType.RESIZE, drawer_resizeHandler);
 				this.addChildAt(this._bottomDrawer, 0);
 			}
 			this.invalidate(INVALIDATION_FLAG_DATA);
@@ -982,6 +993,7 @@ package feathers.controls
 			if(this._leftDrawer)
 			{
 				this._leftDrawer.visible = false;
+				this._leftDrawer.addEventListener(FeathersEventType.RESIZE, drawer_resizeHandler);
 				this.addChildAt(this._leftDrawer, 0);
 			}
 			this.invalidate(INVALIDATION_FLAG_DATA);
@@ -1889,28 +1901,28 @@ package feathers.controls
 			}
 
 			if(this._autoSizeMode == AUTO_SIZE_MODE_CONTENT &&
-				this._content is IFeathersControl)
+				this._content is IValidating)
 			{
-				IFeathersControl(this._content).validate();
+				IValidating(this._content).validate();
 				var isTopDrawerDocked:Boolean = this.isTopDrawerDocked;
-				if(isTopDrawerDocked && this._topDrawer is IFeathersControl)
+				if(isTopDrawerDocked && this._topDrawer is IValidating)
 				{
-					IFeathersControl(this._topDrawer).validate();
+					IValidating(this._topDrawer).validate();
 				}
 				var isRightDrawerDocked:Boolean = this.isRightDrawerDocked;
-				if(isRightDrawerDocked && this._rightDrawer is IFeathersControl)
+				if(isRightDrawerDocked && this._rightDrawer is IValidating)
 				{
-					IFeathersControl(this._rightDrawer).validate();
+					IValidating(this._rightDrawer).validate();
 				}
 				var isBottomDrawerDocked:Boolean = this.isBottomDrawerDocked;
-				if(isBottomDrawerDocked && this._bottomDrawer is IFeathersControl)
+				if(isBottomDrawerDocked && this._bottomDrawer is IValidating)
 				{
-					IFeathersControl(this._bottomDrawer).validate();
+					IValidating(this._bottomDrawer).validate();
 				}
 				var isLeftDrawerDocked:Boolean = this.isLeftDrawerDocked;
-				if(isLeftDrawerDocked && this._leftDrawer is IFeathersControl)
+				if(isLeftDrawerDocked && this._leftDrawer is IValidating)
 				{
-					IFeathersControl(this._leftDrawer).validate();
+					IValidating(this._leftDrawer).validate();
 				}
 			}
 
@@ -1964,21 +1976,21 @@ package feathers.controls
 		 */
 		protected function layoutChildren():void
 		{
-			if(this._topDrawer is IFeathersControl)
+			if(this._topDrawer is IValidating)
 			{
-				IFeathersControl(this._topDrawer).validate();
+				IValidating(this._topDrawer).validate();
 			}
-			if(this._rightDrawer is IFeathersControl)
+			if(this._rightDrawer is IValidating)
 			{
-				IFeathersControl(this._rightDrawer).validate();
+				IValidating(this._rightDrawer).validate();
 			}
-			if(this._bottomDrawer is IFeathersControl)
+			if(this._bottomDrawer is IValidating)
 			{
-				IFeathersControl(this._bottomDrawer).validate();
+				IValidating(this._bottomDrawer).validate();
 			}
-			if(this._leftDrawer is IFeathersControl)
+			if(this._leftDrawer is IValidating)
 			{
-				IFeathersControl(this._leftDrawer).validate();
+				IValidating(this._leftDrawer).validate();
 			}
 			var isTopDrawerOpen:Boolean = this.isTopDrawerOpen;
 			var isRightDrawerOpen:Boolean = this.isRightDrawerOpen;
@@ -2052,9 +2064,9 @@ package feathers.controls
 				this._content.height = contentHeight;
 
 				//final validation to avoid juggler next frame issues
-				if(this._content is IFeathersControl)
+				if(this._content is IValidating)
 				{
-					IFeathersControl(this._content).validate();
+					IValidating(this._content).validate();
 				}
 			}
 
@@ -2079,9 +2091,9 @@ package feathers.controls
 				this._topDrawer.visible = isTopDrawerOpen || isTopDrawerDocked;
 
 				//final validation to avoid juggler next frame issues
-				if(this._topDrawer is IFeathersControl)
+				if(this._topDrawer is IValidating)
 				{
-					IFeathersControl(this._topDrawer).validate();
+					IValidating(this._topDrawer).validate();
 				}
 			}
 
@@ -2109,9 +2121,9 @@ package feathers.controls
 				this._rightDrawer.visible = isRightDrawerOpen || isRightDrawerDocked;
 
 				//final validation to avoid juggler next frame issues
-				if(this._rightDrawer is IFeathersControl)
+				if(this._rightDrawer is IValidating)
 				{
-					IFeathersControl(this._rightDrawer).validate();
+					IValidating(this._rightDrawer).validate();
 				}
 			}
 
@@ -2133,9 +2145,9 @@ package feathers.controls
 				this._bottomDrawer.visible = isBottomDrawerOpen || isBottomDrawerDocked;
 
 				//final validation to avoid juggler next frame issues
-				if(this._bottomDrawer is IFeathersControl)
+				if(this._bottomDrawer is IValidating)
 				{
-					IFeathersControl(this._bottomDrawer).validate();
+					IValidating(this._bottomDrawer).validate();
 				}
 			}
 
@@ -2166,9 +2178,9 @@ package feathers.controls
 				this._leftDrawer.visible = isLeftDrawerOpen || isLeftDrawerDocked;
 
 				//final validation to avoid juggler next frame issues
-				if(this._leftDrawer is IFeathersControl)
+				if(this._leftDrawer is IValidating)
 				{
-					IFeathersControl(this._leftDrawer).validate();
+					IValidating(this._leftDrawer).validate();
 				}
 			}
 		}
@@ -2225,7 +2237,7 @@ package feathers.controls
 			this._openOrCloseTween = new Tween(this._content, this._openOrCloseDuration, this._openOrCloseEase);
 			this._openOrCloseTween.animate("y", targetPosition);
 			this._openOrCloseTween.onUpdate = openOrCloseTween_onUpdate;
-			this._openOrCloseTween.onComplete = openOrCloseTween_onComplete;
+			this._openOrCloseTween.onComplete = topDrawerOpenOrCloseTween_onComplete;
 			Starling.juggler.add(this._openOrCloseTween);
 		}
 
@@ -2258,7 +2270,7 @@ package feathers.controls
 			this._openOrCloseTween = new Tween(this._content, this._openOrCloseDuration, this._openOrCloseEase);
 			this._openOrCloseTween.animate("x", targetPosition);
 			this._openOrCloseTween.onUpdate = openOrCloseTween_onUpdate;
-			this._openOrCloseTween.onComplete = openOrCloseTween_onComplete;
+			this._openOrCloseTween.onComplete = rightDrawerOpenOrCloseTween_onComplete;
 			Starling.juggler.add(this._openOrCloseTween);
 		}
 
@@ -2291,7 +2303,7 @@ package feathers.controls
 			this._openOrCloseTween = new Tween(this._content, this._openOrCloseDuration, this._openOrCloseEase);
 			this._openOrCloseTween.animate("y", targetPosition);
 			this._openOrCloseTween.onUpdate = openOrCloseTween_onUpdate;
-			this._openOrCloseTween.onComplete = openOrCloseTween_onComplete;
+			this._openOrCloseTween.onComplete = bottomDrawerOpenOrCloseTween_onComplete;
 			Starling.juggler.add(this._openOrCloseTween);
 		}
 
@@ -2317,7 +2329,7 @@ package feathers.controls
 			this._openOrCloseTween = new Tween(this._content, duration, this._openOrCloseEase);
 			this._openOrCloseTween.animate("x", targetPosition);
 			this._openOrCloseTween.onUpdate = openOrCloseTween_onUpdate;
-			this._openOrCloseTween.onComplete = openOrCloseTween_onComplete;
+			this._openOrCloseTween.onComplete = leftDrawerOpenOrCloseTween_onComplete;
 			Starling.juggler.add(this._openOrCloseTween);
 		}
 
@@ -3030,44 +3042,92 @@ package feathers.controls
 		/**
 		 * @private
 		 */
-		protected function openOrCloseTween_onComplete():void
+		protected function topDrawerOpenOrCloseTween_onComplete():void
 		{
-			var isTopDrawerOpen:Boolean = this.isTopDrawerOpen;
-			var isRightDrawerOpen:Boolean = this.isRightDrawerOpen;
-			var isBottomDrawerOpen:Boolean = this.isBottomDrawerOpen;
-			var isLeftDrawerOpen:Boolean = this.isLeftDrawerOpen;
 			this._openOrCloseTween = null;
-			if(this._topDrawer)
+			if(this._topDrawer is Sprite)
 			{
-				if(this._topDrawer is Sprite)
-				{
-					Sprite(this._topDrawer).clipRect = null;
-				}
-				this._topDrawer.visible = isTopDrawerOpen || this.isTopDrawerDocked;
+				Sprite(this._topDrawer).clipRect = null;
 			}
-			if(this._rightDrawer)
+			var isTopDrawerOpen:Boolean = this.isTopDrawerOpen;
+			var isTopDrawerDocked:Boolean = this.isTopDrawerDocked;
+			this._topDrawer.visible = isTopDrawerOpen || isTopDrawerDocked;
+			if(isTopDrawerOpen)
 			{
-				if(this._rightDrawer is Sprite)
-				{
-					Sprite(this._rightDrawer).clipRect = null;
-				}
-				this._rightDrawer.visible = isRightDrawerOpen || this.isRightDrawerDocked;
+				this.dispatchEventWith(Event.OPEN);
 			}
-			if(this._bottomDrawer)
+			else
 			{
-				if(this._bottomDrawer is Sprite)
-				{
-					Sprite(this._bottomDrawer).clipRect = null;
-				}
-				this._bottomDrawer.visible = isBottomDrawerOpen || this.isBottomDrawerDocked;
+				this.dispatchEventWith(Event.CLOSE);
 			}
-			if(this._leftDrawer)
+		}
+
+		/**
+		 * @private
+		 */
+		protected function rightDrawerOpenOrCloseTween_onComplete():void
+		{
+			this._openOrCloseTween = null;
+			if(this._rightDrawer is Sprite)
 			{
-				if(this._leftDrawer is Sprite)
-				{
-					Sprite(this._leftDrawer).clipRect = null;
-				}
-				this._leftDrawer.visible = isLeftDrawerOpen || this.isLeftDrawerDocked;
+				Sprite(this._rightDrawer).clipRect = null;
+			}
+			var isRightDrawerOpen:Boolean = this.isRightDrawerOpen;
+			var isRightDrawerDocked:Boolean = this.isRightDrawerDocked;
+			this._rightDrawer.visible = isRightDrawerOpen || isRightDrawerDocked;
+			if(isRightDrawerOpen)
+			{
+				this.dispatchEventWith(Event.OPEN);
+			}
+			else
+			{
+				this.dispatchEventWith(Event.CLOSE);
+			}
+		}
+
+		/**
+		 * @private
+		 */
+		protected function bottomDrawerOpenOrCloseTween_onComplete():void
+		{
+			this._openOrCloseTween = null;
+			if(this._bottomDrawer is Sprite)
+			{
+				Sprite(this._bottomDrawer).clipRect = null;
+			}
+			var isBottomDrawerOpen:Boolean = this.isBottomDrawerOpen;
+			var isBottomDrawerDocked:Boolean = this.isBottomDrawerDocked;
+			this._bottomDrawer.visible = isBottomDrawerOpen || isBottomDrawerDocked;
+			if(isBottomDrawerOpen)
+			{
+				this.dispatchEventWith(Event.OPEN);
+			}
+			else
+			{
+				this.dispatchEventWith(Event.CLOSE);
+			}
+		}
+
+		/**
+		 * @private
+		 */
+		protected function leftDrawerOpenOrCloseTween_onComplete():void
+		{
+			this._openOrCloseTween = null;
+			if(this._leftDrawer is Sprite)
+			{
+				Sprite(this._leftDrawer).clipRect = null;
+			}
+			var isLeftDrawerOpen:Boolean = this.isLeftDrawerOpen;
+			var isLeftDrawerDocked:Boolean = this.isLeftDrawerDocked;
+			this._leftDrawer.visible = isLeftDrawerOpen || isLeftDrawerDocked;
+			if(isLeftDrawerOpen)
+			{
+				this.dispatchEventWith(Event.OPEN);
+			}
+			else
+			{
+				this.dispatchEventWith(Event.CLOSE);
 			}
 		}
 
@@ -3096,6 +3156,17 @@ package feathers.controls
 		 */
 		protected function drawers_removedFromStageHandler(event:Event):void
 		{
+			if(this.touchPointID >= 0)
+			{
+				var exclusiveTouch:ExclusiveTouch = ExclusiveTouch.forStage(this.stage);
+				exclusiveTouch.removeEventListener(Event.CHANGE, exclusiveTouch_changeHandler);
+			}
+			this.touchPointID = -1;
+			this._isDragging = false;
+			this._isDraggingTopDrawer = false;
+			this._isDraggingRightDrawer = false;
+			this._isDraggingBottomDrawer = false;
+			this._isDraggingLeftDrawer = false;
 			this.stage.removeEventListener(ResizeEvent.RESIZE, stage_resizeHandler);
 			Starling.current.nativeStage.removeEventListener(KeyboardEvent.KEY_DOWN, drawers_nativeStage_keyDownHandler);
 		}
@@ -3295,6 +3366,18 @@ package feathers.controls
 		protected function content_resizeHandler(event:Event):void
 		{
 			if(this._isValidating || this._autoSizeMode != AUTO_SIZE_MODE_CONTENT)
+			{
+				return;
+			}
+			this.invalidate(INVALIDATION_FLAG_SIZE);
+		}
+
+		/**
+		 * @private
+		 */
+		protected function drawer_resizeHandler(event:Event):void
+		{
+			if(this._isValidating)
 			{
 				return;
 			}

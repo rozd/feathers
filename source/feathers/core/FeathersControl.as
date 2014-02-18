@@ -18,7 +18,9 @@ package feathers.core
 	import flash.geom.Matrix;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
+	import flash.utils.Dictionary;
 
+	import starling.core.Starling;
 	import starling.display.DisplayObject;
 	import starling.display.Sprite;
 	import starling.events.Event;
@@ -64,11 +66,6 @@ package feathers.core
 		 * @private
 		 */
 		private static const HELPER_POINT:Point = new Point();
-
-		/**
-		 * @private
-		 */
-		protected static const VALIDATION_QUEUE:ValidationQueue = new ValidationQueue();
 
 		/**
 		 * Flag to indicate that everything is invalid and should be redrawn.
@@ -194,6 +191,11 @@ package feathers.core
 			this.addEventListener(Event.REMOVED_FROM_STAGE, feathersControl_removedFromStageHandler);
 			this.addEventListener(Event.FLATTEN, feathersControl_flattenHandler);
 		}
+
+		/**
+		 * @private
+		 */
+		protected var _validationQueue:ValidationQueue;
 
 		/**
 		 * @private
@@ -1263,8 +1265,7 @@ package feathers.core
 		protected var _depth:int = -1;
 
 		/**
-		 * The component's depth in the display list, relative to the stage. If
-		 * the component isn't on the stage, its depth will be <code>-1</code>.
+		 * @copy feathers.core.IValidating#depth
 		 */
 		public function get depth():int
 		{
@@ -1380,6 +1381,15 @@ package feathers.core
 		}
 
 		/**
+		 * @private
+		 */
+		override public function dispose():void
+		{
+			this._validationQueue = null;
+			super.dispose();
+		}
+
+		/**
 		 * Call this function to tell the UI control that a redraw is pending.
 		 * The redraw will happen immediately before Starling renders the UI
 		 * control to the screen. The validation system exists to ensure that
@@ -1428,7 +1438,7 @@ package feathers.core
 					this._invalidationFlags[flag] = true;
 				}
 			}
-			if(!this.stage || !this._isInitialized)
+			if(!this._validationQueue || !this._isInitialized)
 			{
 				//we'll add this component to the queue later, after it has been
 				//added to the stage.
@@ -1441,7 +1451,7 @@ package feathers.core
 					return;
 				}
 				this._invalidateCount++;
-				VALIDATION_QUEUE.addControl(this, this._invalidateCount >= 10);
+				this._validationQueue.addControl(this, this._invalidateCount >= 10);
 				return;
 			}
 			if(isAlreadyInvalid)
@@ -1449,19 +1459,18 @@ package feathers.core
 				return;
 			}
 			this._invalidateCount = 0;
-			VALIDATION_QUEUE.addControl(this, false);
+			this._validationQueue.addControl(this, false);
 		}
 
 		/**
-		 * Immediately validates the control, which triggers a redraw, if one
-		 * is pending. Validation exists to postpone redrawing a component until
-		 * the last possible moment before rendering so that multiple properties
-		 * can be changed at once without requiring a full redraw after each
-		 * change.
-		 * 
-		 * <p>A component cannot validate if it does not have access to the
-		 * stage and if it hasn't initialized yet. A component initializes the
-		 * first time that it has been added to the stage.</p>
+		 * @copy feathers.core.IValidating#validate()
+		 *
+		 * <p>Additionally, a Feathers component cannot validate until it
+		 * initializes. A component initializes after it has been added to the
+		 * stage. If the component has been added to its parent before the
+		 * parent has access to the stage, the component may not initialize
+		 * until after its parent's <code>Event.ADDED_TO_STAGE</code> has been
+		 * dispatched to all listeners.</p>
 		 * 
 		 * @see #invalidate()
 		 * @see #initialize()
@@ -1469,7 +1478,7 @@ package feathers.core
 		 */
 		public function validate():void
 		{
-			if(!this.stage || !this._isInitialized || !this.isInvalid())
+			if(!this._validationQueue || !this._isInitialized || !this.isInvalid())
 			{
 				return;
 			}
@@ -1477,7 +1486,7 @@ package feathers.core
 			{
 				//we were already validating, and something else told us to
 				//validate. that's bad.
-				VALIDATION_QUEUE.addControl(this, true);
+				this._validationQueue.addControl(this, true);
 				return;
 			}
 			this._isValidating = true;
@@ -1673,8 +1682,14 @@ package feathers.core
 				}
 				resized = true;
 			}
+			width = this.scaledActualWidth;
+			height = this.scaledActualHeight;
 			this.scaledActualWidth = this.actualWidth * Math.abs(this.scaleX);
 			this.scaledActualHeight = this.actualHeight * Math.abs(this.scaleY);
+			if(width != this.scaledActualWidth || height != this.scaledActualHeight)
+			{
+				resized = true;
+			}
 			if(resized)
 			{
 				if(canInvalidate)
@@ -1814,6 +1829,8 @@ package feathers.core
 		protected function feathersControl_addedToStageHandler(event:Event):void
 		{
 			this._depth = getDisplayObjectDepthFromStage(this);
+			this._validationQueue = ValidationQueue.forStarling(Starling.current);
+
 			if(!this._isInitialized)
 			{
 				this.initialize();
@@ -1824,7 +1841,8 @@ package feathers.core
 			if(this.isInvalid())
 			{
 				this._invalidateCount = 0;
-				VALIDATION_QUEUE.addControl(this, false);
+				//add to validation queue, if required
+				this._validationQueue.addControl(this, false);
 			}
 		}
 
@@ -1834,6 +1852,7 @@ package feathers.core
 		protected function feathersControl_removedFromStageHandler(event:Event):void
 		{
 			this._depth = -1;
+			this._validationQueue = null;
 		}
 
 		/**
