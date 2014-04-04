@@ -1,6 +1,6 @@
 /*
 Feathers
-Copyright 2012-2013 Joshua Tynjala. All Rights Reserved.
+Copyright 2012-2014 Joshua Tynjala. All Rights Reserved.
 
 This program is free software. You can redistribute and/or modify it in
 accordance with the terms of the accompanying license agreement.
@@ -26,6 +26,21 @@ package feathers.controls
 	/**
 	 * Dispatched when the text area's <code>text</code> property changes.
 	 *
+	 * <p>The properties of the event object have the following values:</p>
+	 * <table class="innertable">
+	 * <tr><th>Property</th><th>Value</th></tr>
+	 * <tr><td><code>bubbles</code></td><td>false</td></tr>
+	 * <tr><td><code>currentTarget</code></td><td>The Object that defines the
+	 *   event listener that handles the event. For example, if you use
+	 *   <code>myButton.addEventListener()</code> to register an event listener,
+	 *   myButton is the value of the <code>currentTarget</code>.</td></tr>
+	 * <tr><td><code>data</code></td><td>null</td></tr>
+	 * <tr><td><code>target</code></td><td>The Object that dispatched the event;
+	 *   it is not always the Object listening for the event. Use the
+	 *   <code>currentTarget</code> property to always access the Object
+	 *   listening for the event.</td></tr>
+	 * </table>
+	 *
 	 * @eventType starling.events.Event.CHANGE
 	 */
 	[Event(name="change",type="starling.events.Event")]
@@ -33,12 +48,42 @@ package feathers.controls
 	/**
 	 * Dispatched when the text area receives focus.
 	 *
+	 * <p>The properties of the event object have the following values:</p>
+	 * <table class="innertable">
+	 * <tr><th>Property</th><th>Value</th></tr>
+	 * <tr><td><code>bubbles</code></td><td>false</td></tr>
+	 * <tr><td><code>currentTarget</code></td><td>The Object that defines the
+	 *   event listener that handles the event. For example, if you use
+	 *   <code>myButton.addEventListener()</code> to register an event listener,
+	 *   myButton is the value of the <code>currentTarget</code>.</td></tr>
+	 * <tr><td><code>data</code></td><td>null</td></tr>
+	 * <tr><td><code>target</code></td><td>The Object that dispatched the event;
+	 *   it is not always the Object listening for the event. Use the
+	 *   <code>currentTarget</code> property to always access the Object
+	 *   listening for the event.</td></tr>
+	 * </table>
+	 *
 	 * @eventType feathers.events.FeathersEventType.FOCUS_IN
 	 */
 	[Event(name="focusIn",type="starling.events.Event")]
 
 	/**
 	 * Dispatched when the text area loses focus.
+	 *
+	 * <p>The properties of the event object have the following values:</p>
+	 * <table class="innertable">
+	 * <tr><th>Property</th><th>Value</th></tr>
+	 * <tr><td><code>bubbles</code></td><td>false</td></tr>
+	 * <tr><td><code>currentTarget</code></td><td>The Object that defines the
+	 *   event listener that handles the event. For example, if you use
+	 *   <code>myButton.addEventListener()</code> to register an event listener,
+	 *   myButton is the value of the <code>currentTarget</code>.</td></tr>
+	 * <tr><td><code>data</code></td><td>null</td></tr>
+	 * <tr><td><code>target</code></td><td>The Object that dispatched the event;
+	 *   it is not always the Object listening for the event. Use the
+	 *   <code>currentTarget</code> property to always access the Object
+	 *   listening for the event.</td></tr>
+	 * </table>
 	 *
 	 * @eventType feathers.events.FeathersEventType.FOCUS_OUT
 	 */
@@ -157,6 +202,21 @@ package feathers.controls
 		public static const INTERACTION_MODE_TOUCH_AND_SCROLL_BARS:String = "touchAndScrollBars";
 
 		/**
+		 * The <code>TextArea</code> is enabled and does not have focus.
+		 */
+		public static const STATE_ENABLED:String = "enabled";
+
+		/**
+		 * The <code>TextArea</code> is disabled.
+		 */
+		public static const STATE_DISABLED:String = "disabled";
+
+		/**
+		 * The <code>TextArea</code> is enabled and has focus.
+		 */
+		public static const STATE_FOCUSED:String = "focused";
+
+		/**
 		 * Constructor.
 		 */
 		public function TextArea()
@@ -213,6 +273,88 @@ package feathers.controls
 		override public function get isFocusEnabled():Boolean
 		{
 			return this._isEditable && this._isFocusEnabled;
+		}
+
+		/**
+		 * When the <code>FocusManager</code> isn't enabled, <code>hasFocus</code>
+		 * can be used instead of <code>FocusManager.focus == textArea</code>
+		 * to determine if the text area has focus.
+		 */
+		public function get hasFocus():Boolean
+		{
+			if(!this._focusManager)
+			{
+				return this._textEditorHasFocus;
+			}
+			return this._hasFocus;
+		}
+
+		/**
+		 * @private
+		 */
+		override public function set isEnabled(value:Boolean):void
+		{
+			super.isEnabled = value;
+			if(this._isEnabled)
+			{
+				this.currentState = this._hasFocus ? STATE_FOCUSED : STATE_ENABLED;
+			}
+			else
+			{
+				this.currentState = STATE_DISABLED;
+			}
+		}
+
+		/**
+		 * @private
+		 */
+		protected var _stateNames:Vector.<String> = new <String>
+		[
+			STATE_ENABLED, STATE_DISABLED, STATE_FOCUSED
+		];
+
+		/**
+		 * A list of all valid state names for use with <code>currentState</code>.
+		 *
+		 * <p>For internal use in subclasses.</p>
+		 *
+		 * @see #currentState
+		 */
+		protected function get stateNames():Vector.<String>
+		{
+			return this._stateNames;
+		}
+
+		/**
+		 * @private
+		 */
+		protected var _currentState:String = STATE_ENABLED;
+
+		/**
+		 * The current state of the input.
+		 *
+		 * <p>For internal use in subclasses.</p>
+		 */
+		protected function get currentState():String
+		{
+			return this._currentState;
+		}
+
+		/**
+		 * @private
+		 */
+		protected function set currentState(value:String):void
+		{
+			if(this._currentState == value)
+			{
+				return;
+			}
+			if(this.stateNames.indexOf(value) < 0)
+			{
+				throw new ArgumentError("Invalid state: " + value + ".");
+			}
+			this._currentState = value;
+			this.invalidate(INVALIDATION_FLAG_STATE);
 		}
 
 		/**
@@ -404,6 +546,37 @@ package feathers.controls
 				this._backgroundFocusedSkin.touchable = false;
 				this.addChildAt(this._backgroundFocusedSkin, 0);
 			}
+			this.invalidate(INVALIDATION_FLAG_SKIN);
+		}
+
+		/**
+		 * @private
+		 */
+		protected var _stateToSkinFunction:Function;
+
+		/**
+		 * Returns a skin for the current state.
+		 *
+		 * <p>The following function signature is expected:</p>
+		 * <pre>function( target:TextArea, state:Object, oldSkin:DisplayObject = null ):DisplayObject</pre>
+		 *
+		 * @default null
+		 */
+		public function get stateToSkinFunction():Function
+		{
+			return this._stateToSkinFunction;
+		}
+
+		/**
+		 * @private
+		 */
+		public function set stateToSkinFunction(value:Function):void
+		{
+			if(this._stateToSkinFunction == value)
+			{
+				return;
+			}
+			this._stateToSkinFunction = value;
 			this.invalidate(INVALIDATION_FLAG_SKIN);
 		}
 
@@ -774,12 +947,34 @@ package feathers.controls
 		 */
 		override protected function refreshBackgroundSkin():void
 		{
-			if(this._hasFocus && this._backgroundFocusedSkin)
+			var oldSkin:DisplayObject = this.currentBackgroundSkin;
+			if(this._stateToSkinFunction != null)
+			{
+				this.currentBackgroundSkin = DisplayObject(this._stateToSkinFunction(this, this._currentState, oldSkin));
+			}
+			else if(this._hasFocus && this._backgroundFocusedSkin)
 			{
 				this.currentBackgroundSkin = this._backgroundFocusedSkin;
-				this.setChildIndex(this.currentBackgroundSkin, 0);
+			}
+			if(oldSkin != this.currentBackgroundSkin)
+			{
+				if(oldSkin)
+				{
+					oldSkin.visible = false;
+					if(this._stateToSkinFunction != null)
+					{
+						this.removeChild(oldSkin);
+					}
+				}
+				if(this._stateToSkinFunction != null)
+				{
+					this.addChildAt(this.currentBackgroundSkin, 0);
+				}
+				else
+				{
+					this.setChildIndex(this.currentBackgroundSkin, 0);
+				}
 				this.currentBackgroundSkin.visible = true;
-
 				if(isNaN(this.originalBackgroundWidth))
 				{
 					this.originalBackgroundWidth = this.currentBackgroundSkin.width;
@@ -951,6 +1146,7 @@ package feathers.controls
 		protected function textEditor_focusInHandler(event:Event):void
 		{
 			this._textEditorHasFocus = true;
+			this.currentState = STATE_FOCUSED;
 			this._touchPointID = -1;
 			this.invalidate(INVALIDATION_FLAG_STATE);
 			if(this._focusManager)
@@ -969,6 +1165,7 @@ package feathers.controls
 		protected function textEditor_focusOutHandler(event:Event):void
 		{
 			this._textEditorHasFocus = false;
+			this.currentState = this._isEnabled ? STATE_ENABLED : STATE_DISABLED;
 			this.invalidate(INVALIDATION_FLAG_STATE);
 			if(this._focusManager)
 			{

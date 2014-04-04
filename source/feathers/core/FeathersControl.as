@@ -1,6 +1,6 @@
 /*
 Feathers
-Copyright 2012-2013 Joshua Tynjala. All Rights Reserved.
+Copyright 2012-2014 Joshua Tynjala. All Rights Reserved.
 
 This program is free software. You can redistribute and/or modify it in
 accordance with the terms of the accompanying license agreement.
@@ -18,7 +18,6 @@ package feathers.core
 	import flash.geom.Matrix;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
-	import flash.utils.Dictionary;
 
 	import starling.core.Starling;
 	import starling.display.DisplayObject;
@@ -30,6 +29,21 @@ package feathers.core
 	 * Dispatched after <code>initialize()</code> has been called, but before
 	 * the first time that <code>draw()</code> has been called.
 	 *
+	 * <p>The properties of the event object have the following values:</p>
+	 * <table class="innertable">
+	 * <tr><th>Property</th><th>Value</th></tr>
+	 * <tr><td><code>bubbles</code></td><td>false</td></tr>
+	 * <tr><td><code>currentTarget</code></td><td>The Object that defines the
+	 *   event listener that handles the event. For example, if you use
+	 *   <code>myButton.addEventListener()</code> to register an event listener,
+	 *   myButton is the value of the <code>currentTarget</code>.</td></tr>
+	 * <tr><td><code>data</code></td><td>null</td></tr>
+	 * <tr><td><code>target</code></td><td>The Object that dispatched the event;
+	 *   it is not always the Object listening for the event. Use the
+	 *   <code>currentTarget</code> property to always access the Object
+	 *   listening for the event.</td></tr>
+	 * </table>
+	 *
 	 * @eventType feathers.events.FeathersEventType.INITIALIZE
 	 */
 	[Event(name="initialize",type="starling.events.Event")]
@@ -39,12 +53,42 @@ package feathers.core
 	 * <code>initialize()</code> and <code>draw()</code> will have been called,
 	 * and all children will have been created.
 	 *
+	 * <p>The properties of the event object have the following values:</p>
+	 * <table class="innertable">
+	 * <tr><th>Property</th><th>Value</th></tr>
+	 * <tr><td><code>bubbles</code></td><td>false</td></tr>
+	 * <tr><td><code>currentTarget</code></td><td>The Object that defines the
+	 *   event listener that handles the event. For example, if you use
+	 *   <code>myButton.addEventListener()</code> to register an event listener,
+	 *   myButton is the value of the <code>currentTarget</code>.</td></tr>
+	 * <tr><td><code>data</code></td><td>null</td></tr>
+	 * <tr><td><code>target</code></td><td>The Object that dispatched the event;
+	 *   it is not always the Object listening for the event. Use the
+	 *   <code>currentTarget</code> property to always access the Object
+	 *   listening for the event.</td></tr>
+	 * </table>
+	 *
 	 * @eventType feathers.events.FeathersEventType.CREATION_COMPLETE
 	 */
 	[Event(name="creationComplete",type="starling.events.Event")]
 
 	/**
 	 * Dispatched when the width or height of the control changes.
+	 *
+	 * <p>The properties of the event object have the following values:</p>
+	 * <table class="innertable">
+	 * <tr><th>Property</th><th>Value</th></tr>
+	 * <tr><td><code>bubbles</code></td><td>false</td></tr>
+	 * <tr><td><code>currentTarget</code></td><td>The Object that defines the
+	 *   event listener that handles the event. For example, if you use
+	 *   <code>myButton.addEventListener()</code> to register an event listener,
+	 *   myButton is the value of the <code>currentTarget</code>.</td></tr>
+	 * <tr><td><code>data</code></td><td>null</td></tr>
+	 * <tr><td><code>target</code></td><td>The Object that dispatched the event;
+	 *   it is not always the Object listening for the event. Use the
+	 *   <code>currentTarget</code> property to always access the Object
+	 *   listening for the event.</td></tr>
+	 * </table>
 	 *
 	 * @eventType feathers.events.FeathersEventType.RESIZE
 	 */
@@ -148,6 +192,11 @@ package feathers.core
 		protected static const ILLEGAL_HEIGHT_ERROR:String = "A component's height cannot be NaN.";
 
 		/**
+		 * @private
+		 */
+		protected static const ABSTRACT_CLASS_ERROR:String = "FeathersControl is an abstract class. For a lightweight Feathers wrapper, use feathers.controls.LayoutGroup.";
+
+		/**
 		 * A function used by all UI controls that support text renderers to
 		 * create an ITextRenderer instance. You may replace the default
 		 * function with your own, if you prefer not to use the
@@ -187,6 +236,10 @@ package feathers.core
 		public function FeathersControl()
 		{
 			super();
+			if(Object(this).constructor == FeathersControl)
+			{
+				throw new Error(ABSTRACT_CLASS_ERROR);
+			}
 			this.addEventListener(Event.ADDED_TO_STAGE, feathersControl_addedToStageHandler);
 			this.addEventListener(Event.REMOVED_FROM_STAGE, feathersControl_removedFromStageHandler);
 			this.addEventListener(Event.FLATTEN, feathersControl_flattenHandler);
@@ -198,12 +251,42 @@ package feathers.core
 		protected var _validationQueue:ValidationQueue;
 
 		/**
-		 * @private
+		 * The concatenated <code>styleNameList</code>, with values separated
+		 * by spaces. Style names are somewhat similar to classes in CSS
+		 * selectors. In Feathers, they are a non-unique identifier that can
+		 * differentiate multiple styles of the same type of UI control. A
+		 * single control may have many style names, and many controls can share
+		 * a single style name. A <a href="">theme</a> or another
+		 *
+		 * <p>In general, the <code>styleName</code> property should not be set
+		 * directly on a Feathers component. You should add and remove style
+		 * names from the <code>styleNameList</code> property instead.</p>
+		 *
+		 * @default ""
+		 *
+		 * @see #styleNameList
+		 * @see http://wiki.starling-framework.org/feathers/extending-themes
 		 */
-		protected var _nameList:TokenList = new TokenList();
+		public function get styleName():String
+		{
+			return this._styleNameList.value;
+		}
 
 		/**
-		 * Contains a list of all "names" assigned to this control. Names are
+		 * @private
+		 */
+		public function set styleName(value:String):void
+		{
+			this._styleNameList.value = value;
+		}
+
+		/**
+		 * @private
+		 */
+		protected var _styleNameList:TokenList = new TokenList();
+
+		/**
+		 * Contains a list of all "styles" assigned to this control. Names are
 		 * like classes in CSS selectors. They are a non-unique identifier that
 		 * can differentiate multiple styles of the same type of UI control. A
 		 * single control may have many names, and many controls can share a
@@ -213,43 +296,27 @@ package feathers.core
 		 * <p>In the following example, a name is added to the name list:</p>
 		 *
 		 * <listing version="3.0">
-		 * control.nameList.add( "custom-component-name" );</listing>
+		 * control.styleNameList.add( "custom-component-name" );</listing>
 		 *
 		 * @see #name
 		 * @see http://wiki.starling-framework.org/feathers/extending-themes
 		 */
+		public function get styleNameList():TokenList
+		{
+			return this._styleNameList;
+		}
+
+		/**
+		 * DEPRECATED: Replaced by the <code>styleNameList</code> property.
+		 *
+		 * <p><strong>DEPRECATION WARNING:</strong> This property is deprecated
+		 * starting with Feathers 1.4. It will be removed in a future version of
+		 * Feathers according to the standard
+		 * <a href="http://wiki.starling-framework.org/feathers/deprecation-policy">Feathers deprecation policy</a>.</p>
+		 */
 		public function get nameList():TokenList
 		{
-			return this._nameList;
-		}
-
-		/**
-		 * The concatenated <code>nameList</code>, with each name separated by
-		 * spaces. Names are like classes in CSS selectors. They are a
-		 * non-unique identifier that can differentiate multiple styles of the
-		 * same type of UI control. A single control may have many names, and
-		 * many controls can share a single name.
-		 *
-		 * <p>In general, the <code>name</code> property should not be set on a
-		 * Feathers component. You should add and remove names from the
-		 * <code>nameList</code> property instead.</p>
-		 *
-		 * @default ""
-		 *
-		 * @see #nameList
-		 * @see http://wiki.starling-framework.org/feathers/extending-themes
-		 */
-		override public function get name():String
-		{
-			return this._nameList.value;
-		}
-
-		/**
-		 * @private
-		 */
-		override public function set name(value:String):void
-		{
-			this._nameList.value = value;
+			return this._styleNameList;
 		}
 
 		/**
@@ -565,7 +632,7 @@ package feathers.core
 				return;
 			}
 			this._minTouchWidth = value;
-			this.invalidate(INVALIDATION_FLAG_SIZE);
+			this.refreshHitAreaX();
 		}
 
 		/**
@@ -600,7 +667,7 @@ package feathers.core
 				return;
 			}
 			this._minTouchHeight = value;
-			this.invalidate(INVALIDATION_FLAG_SIZE);
+			this.refreshHitAreaY();
 		}
 
 		/**
@@ -1280,31 +1347,6 @@ package feathers.core
 		/**
 		 * @private
 		 */
-		override public function getChildByName(name:String):DisplayObject
-		{
-			var childCount:int = this.numChildren;
-			for(var i:int = 0; i < childCount; i++)
-			{
-				var child:DisplayObject = this.getChildAt(i);
-				if(child is IFeathersControl)
-				{
-					var feathersChild:IFeathersControl = IFeathersControl(child);
-					if(feathersChild.nameList.contains(name))
-					{
-						return DisplayObject(feathersChild);
-					}
-				}
-				else if(child.name == name)
-				{
-					return child;
-				}
-			}
-			return null;
-		}
-
-		/**
-		 * @private
-		 */
 		override public function getBounds(targetSpace:DisplayObject, resultRect:Rectangle=null):Rectangle
 		{
 			if(!resultRect)
@@ -1647,39 +1689,13 @@ package feathers.core
 			if(this.actualWidth != width)
 			{
 				this.actualWidth = width;
-				if(width < this._minTouchWidth)
-				{
-					this._hitArea.width = this._minTouchWidth;
-				}
-				else
-				{
-					this._hitArea.width = width;
-				}
-				var hitAreaX:Number = (this.actualWidth - this._hitArea.width) / 2;
-				this._hitArea.x = hitAreaX;
-				if(hitAreaX != hitAreaX) //faster than isNaN
-				{
-					this._hitArea.x = 0;
-				}
+				this.refreshHitAreaX();
 				resized = true;
 			}
 			if(this.actualHeight != height)
 			{
 				this.actualHeight = height;
-				if(height < this._minTouchHeight)
-				{
-					this._hitArea.height = this._minTouchHeight;
-				}
-				else
-				{
-					this._hitArea.height = height;
-				}
-				var hitAreaY:Number = (this.actualHeight - this._hitArea.height) / 2;
-				this._hitArea.y = hitAreaY;
-				if(hitAreaY != hitAreaY) //faster than isNaN
-				{
-					this._hitArea.y = 0;
-				}
+				this.refreshHitAreaY();
 				resized = true;
 			}
 			width = this.scaledActualWidth;
@@ -1786,6 +1802,54 @@ package feathers.core
 		}
 
 		/**
+		 * @private
+		 */
+		protected function refreshHitAreaX():void
+		{
+			if(this.actualWidth < this._minTouchWidth)
+			{
+				this._hitArea.width = this._minTouchWidth;
+			}
+			else
+			{
+				this._hitArea.width = this.actualWidth;
+			}
+			var hitAreaX:Number = (this.actualWidth - this._hitArea.width) / 2;
+			if(hitAreaX != hitAreaX) //isNaN
+			{
+				this._hitArea.x = 0;
+			}
+			else
+			{
+				this._hitArea.x = hitAreaX;
+			}
+		}
+
+		/**
+		 * @private
+		 */
+		protected function refreshHitAreaY():void
+		{
+			if(this.actualHeight < this._minTouchHeight)
+			{
+				this._hitArea.height = this._minTouchHeight;
+			}
+			else
+			{
+				this._hitArea.height = this.actualHeight;
+			}
+			var hitAreaY:Number = (this.actualHeight - this._hitArea.height) / 2;
+			if(hitAreaY != hitAreaY) //isNaN
+			{
+				this._hitArea.y = 0;
+			}
+			else
+			{
+				this._hitArea.y = hitAreaY;
+			}
+		}
+
+		/**
 		 * Default event handler for <code>FeathersEventType.FOCUS_IN</code>
 		 * that may be overridden in subclasses to perform additional actions
 		 * when the component receives focus.
@@ -1836,7 +1900,7 @@ package feathers.core
 				this.initialize();
 				this.invalidate(); //invalidate everything
 				this._isInitialized = true;
-				this.dispatchEventWith(FeathersEventType.INITIALIZE, false);
+				this.dispatchEventWith(FeathersEventType.INITIALIZE);
 			}
 			if(this.isInvalid())
 			{

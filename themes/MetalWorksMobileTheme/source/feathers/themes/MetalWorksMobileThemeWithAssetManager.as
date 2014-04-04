@@ -29,6 +29,7 @@ package feathers.themes
 	import feathers.controls.ButtonGroup;
 	import feathers.controls.Callout;
 	import feathers.controls.Check;
+	import feathers.controls.Drawers;
 	import feathers.controls.GroupedList;
 	import feathers.controls.Header;
 	import feathers.controls.ImageLoader;
@@ -45,10 +46,10 @@ package feathers.themes
 	import feathers.controls.ScrollContainer;
 	import feathers.controls.ScrollScreen;
 	import feathers.controls.ScrollText;
-	import feathers.controls.Scroller;
 	import feathers.controls.SimpleScrollBar;
 	import feathers.controls.Slider;
 	import feathers.controls.TabBar;
+	import feathers.controls.TextArea;
 	import feathers.controls.TextInput;
 	import feathers.controls.ToggleSwitch;
 	import feathers.controls.popups.CalloutPopUpContentManager;
@@ -60,7 +61,6 @@ package feathers.themes
 	import feathers.controls.text.StageTextTextEditor;
 	import feathers.controls.text.TextBlockTextRenderer;
 	import feathers.controls.text.TextFieldTextEditor;
-	import feathers.controls.text.TextFieldTextRenderer;
 	import feathers.core.DisplayListWatcher;
 	import feathers.core.FeathersControl;
 	import feathers.core.PopUpManager;
@@ -102,6 +102,21 @@ package feathers.themes
 
 	[Event(name="complete",type="starling.events.Event")]
 
+	/**
+	 * The "Metal Works" theme for mobile Feathers apps.
+	 *
+	 * <p>This version of the theme requires loading assets at runtime. To use
+	 * embedded assets, see <code>MetalWorksMobileTheme</code> instead.</p>
+	 *
+	 * <p>To use this theme, the following files must be included when packaging
+	 * your app:</p>
+	 * <ul>
+	 *     <li>images/metalworks.png</li>
+	 *     <li>images/metalworks.xml</li>
+	 * </ul>
+	 *
+	 * @see http://wiki.starling-framework.org/feathers/theme-assets
+	 */
 	public class MetalWorksMobileThemeWithAssetManager extends DisplayListWatcher
 	{
 		[Embed(source="/../assets/fonts/SourceSansPro-Regular.ttf",fontFamily="SourceSansPro",fontWeight="normal",mimeType="application/x-font",embedAsCFF="true")]
@@ -128,6 +143,8 @@ package feathers.themes
 		protected static const GROUPED_LIST_FOOTER_BACKGROUND_COLOR:uint = 0x2e2a26;
 		protected static const MODAL_OVERLAY_COLOR:uint = 0x29241e;
 		protected static const MODAL_OVERLAY_ALPHA:Number = 0.8;
+		protected static const DRAWER_OVERLAY_COLOR:uint = 0x29241e;
+		protected static const DRAWER_OVERLAY_ALPHA:Number = 0.4;
 
 		protected static const ORIGINAL_DPI_IPHONE_RETINA:int = 326;
 		protected static const ORIGINAL_DPI_IPAD_RETINA:int = 264;
@@ -234,6 +251,7 @@ package feathers.themes
 		protected var boldFontDescription:FontDescription;
 
 		protected var scrollTextTextFormat:TextFormat;
+		protected var scrollTextDisabledTextFormat:TextFormat;
 		protected var lightUICenteredTextFormat:TextFormat;
 
 		protected var headerElementFormat:ElementFormat;
@@ -483,6 +501,7 @@ package feathers.themes
 		{
 			//these are for components that don't use FTE
 			this.scrollTextTextFormat = new TextFormat("_sans", 24 * this.scale, LIGHT_TEXT_COLOR);
+			this.scrollTextDisabledTextFormat = new TextFormat("_sans", 24 * this.scale, DISABLED_TEXT_COLOR);
 			this.lightUICenteredTextFormat = new TextFormat(FONT_NAME, 24 * this.scale, LIGHT_TEXT_COLOR, true, null, null, null, null, TextFormatAlign.CENTER);
 
 			this.regularFontDescription = new FontDescription(FONT_NAME, FontWeight.NORMAL, FontPosture.NORMAL, FontLookup.EMBEDDED_CFF, RenderingMode.CFF, CFFHinting.NONE);
@@ -625,6 +644,9 @@ package feathers.themes
 			//check
 			this.setInitializerForClass(Check, checkInitializer);
 
+			//drawers
+			this.setInitializerForClass(Drawers, drawersInitializer);
+
 			//grouped list (see also: item renderers)
 			this.setInitializerForClass(GroupedList, groupedListInitializer);
 			this.setInitializerForClass(GroupedList, insetGroupedListInitializer, GroupedList.ALTERNATE_NAME_INSET_GROUPED_LIST);
@@ -644,6 +666,7 @@ package feathers.themes
 			this.setInitializerForClass(DefaultListItemRenderer, pickerListItemRendererInitializer, THEME_NAME_PICKER_LIST_ITEM_RENDERER);
 			this.setInitializerForClass(DefaultGroupedListItemRenderer, itemRendererInitializer);
 			this.setInitializerForClass(TextBlockTextRenderer, itemRendererAccessoryLabelInitializer, BaseDefaultItemRenderer.DEFAULT_CHILD_NAME_ACCESSORY_LABEL);
+			this.setInitializerForClass(TextBlockTextRenderer, itemRendererIconLabelInitializer, BaseDefaultItemRenderer.DEFAULT_CHILD_NAME_ICON_LABEL);
 			this.setInitializerForClass(DefaultGroupedListItemRenderer, insetMiddleItemRendererInitializer, GroupedList.ALTERNATE_CHILD_NAME_INSET_ITEM_RENDERER);
 			this.setInitializerForClass(DefaultGroupedListItemRenderer, insetFirstItemRendererInitializer, GroupedList.ALTERNATE_CHILD_NAME_INSET_FIRST_ITEM_RENDERER);
 			this.setInitializerForClass(DefaultGroupedListItemRenderer, insetLastItemRendererInitializer, GroupedList.ALTERNATE_CHILD_NAME_INSET_LAST_ITEM_RENDERER);
@@ -667,6 +690,9 @@ package feathers.themes
 			//panel
 			this.setInitializerForClass(Panel, panelInitializer);
 			this.setInitializerForClass(Header, headerWithoutBackgroundInitializer, Panel.DEFAULT_CHILD_NAME_HEADER);
+
+			//panel screen
+			this.setInitializerForClass(Header, panelScreenHeaderInitializer, PanelScreen.DEFAULT_CHILD_NAME_HEADER);
 
 			//picker list (see also: list and item renderers)
 			this.setInitializerForClass(PickerList, pickerListInitializer);
@@ -707,6 +733,9 @@ package feathers.themes
 			//text input
 			this.setInitializerForClass(TextInput, textInputInitializer);
 			this.setInitializerForClass(TextInput, searchTextInputInitializer, TextInput.ALTERNATE_NAME_SEARCH_TEXT_INPUT);
+
+			//text area
+			this.setInitializerForClass(TextArea, textAreaInitializer);
 
 			//toggle switch
 			this.setInitializerForClass(ToggleSwitch, toggleSwitchInitializer);
@@ -797,6 +826,11 @@ package feathers.themes
 			renderer.elementFormat = this.lightElementFormat;
 		}
 
+		protected function itemRendererIconLabelInitializer(renderer:TextBlockTextRenderer):void
+		{
+			renderer.elementFormat = this.lightElementFormat;
+		}
+
 		protected function alertMessageInitializer(renderer:TextBlockTextRenderer):void
 		{
 			renderer.wordWrap = true;
@@ -806,6 +840,7 @@ package feathers.themes
 		protected function scrollTextInitializer(text:ScrollText):void
 		{
 			text.textFormat = this.scrollTextTextFormat;
+			text.disabledTextFormat = this.scrollTextDisabledTextFormat;
 			text.paddingTop = text.paddingBottom = text.paddingLeft = 32 * this.scale;
 			text.paddingRight = 36 * this.scale;
 		}
@@ -819,6 +854,7 @@ package feathers.themes
 			button.paddingTop = button.paddingBottom = 8 * this.scale;
 			button.paddingLeft = button.paddingRight = 16 * this.scale;
 			button.gap = 12 * this.scale;
+			button.minGap = 12 * this.scale;
 			button.minWidth = button.minHeight = 60 * this.scale;
 			button.minTouchWidth = button.minTouchHeight = 88 * this.scale;
 		}
@@ -880,6 +916,7 @@ package feathers.themes
 			button.paddingTop = button.paddingBottom = 8 * this.scale;
 			button.paddingLeft = button.paddingRight = 16 * this.scale;
 			button.gap = 12 * this.scale;
+			button.minGap = 12 * this.scale;
 			button.minWidth = button.minHeight = 60 * this.scale;
 			button.minTouchWidth = button.minTouchHeight = 88 * this.scale;
 		}
@@ -957,6 +994,7 @@ package feathers.themes
 			button.paddingTop = button.paddingBottom = 8 * this.scale;
 			button.paddingLeft = button.paddingRight = 16 * this.scale;
 			button.gap = 12 * this.scale;
+			button.minGap = 12 * this.scale;
 			button.minWidth = button.minHeight = 76 * this.scale;
 			button.minTouchWidth = button.minTouchHeight = 88 * this.scale;
 		}
@@ -978,6 +1016,7 @@ package feathers.themes
 			button.defaultIcon = defaultIcon;
 
 			button.gap = Number.POSITIVE_INFINITY;
+			button.minGap = 12 * this.scale
 			button.iconPosition = Button.ICON_POSITION_RIGHT;
 		}
 
@@ -1068,8 +1107,10 @@ package feathers.themes
 			renderer.paddingLeft = 32 * this.scale;
 			renderer.paddingRight = 24 * this.scale;
 			renderer.gap = 20 * this.scale;
+			renderer.minGap = 24 * this.scale;
 			renderer.iconPosition = Button.ICON_POSITION_LEFT;
 			renderer.accessoryGap = Number.POSITIVE_INFINITY;
+			renderer.minAccessoryGap = 24 * this.scale;
 			renderer.accessoryPosition = BaseDefaultItemRenderer.ACCESSORY_POSITION_RIGHT;
 			renderer.minWidth = renderer.minHeight = 88 * this.scale;
 			renderer.minTouchWidth = renderer.minTouchHeight = 88 * this.scale;
@@ -1109,8 +1150,10 @@ package feathers.themes
 			renderer.paddingLeft = 32 * this.scale;
 			renderer.paddingRight = 24 * this.scale;
 			renderer.gap = Number.POSITIVE_INFINITY;
+			renderer.minGap = 24 * this.scale;
 			renderer.iconPosition = Button.ICON_POSITION_RIGHT;
 			renderer.accessoryGap = Number.POSITIVE_INFINITY;
+			renderer.minAccessoryGap = 24 * this.scale;
 			renderer.accessoryPosition = BaseDefaultItemRenderer.ACCESSORY_POSITION_RIGHT;
 			renderer.minWidth = renderer.minHeight = 88 * this.scale;
 			renderer.minTouchWidth = renderer.minTouchHeight = 88 * this.scale;
@@ -1140,8 +1183,10 @@ package feathers.themes
 			renderer.paddingLeft = 32 * this.scale;
 			renderer.paddingRight = 24 * this.scale;
 			renderer.gap = 20 * this.scale;
+			renderer.minGap = 24 * this.scale;
 			renderer.iconPosition = Button.ICON_POSITION_LEFT;
 			renderer.accessoryGap = Number.POSITIVE_INFINITY;
+			renderer.minAccessoryGap = 16 * this.scale;
 			renderer.accessoryPosition = BaseDefaultItemRenderer.ACCESSORY_POSITION_RIGHT;
 			renderer.minWidth = renderer.minHeight = 88 * this.scale;
 			renderer.minTouchWidth = renderer.minTouchHeight = 88 * this.scale;
@@ -1278,6 +1323,13 @@ package feathers.themes
 
 			check.gap = 8 * this.scale;
 			check.minTouchWidth = check.minTouchHeight = 88 * this.scale;
+		}
+
+		protected function drawersInitializer(drawers:Drawers):void
+		{
+			var overlaySkin:Quad = new Quad(10, 10, DRAWER_OVERLAY_COLOR);
+			overlaySkin.alpha = DRAWER_OVERLAY_ALPHA;
+			drawers.overlaySkin = overlaySkin;
 		}
 
 		protected function sliderInitializer(slider:Slider):void
@@ -1440,6 +1492,28 @@ package feathers.themes
 			input.defaultIcon = searchIcon;
 		}
 
+		protected function textAreaInitializer(textArea:TextArea):void
+		{
+			var skinSelector:SmartDisplayObjectStateValueSelector = new SmartDisplayObjectStateValueSelector();
+			skinSelector.defaultValue = this.backgroundInsetSkinTextures;
+			skinSelector.setValueForState(this.backgroundDisabledSkinTextures, TextArea.STATE_DISABLED);
+			skinSelector.setValueForState(this.backgroundFocusedSkinTextures, TextArea.STATE_FOCUSED);
+			skinSelector.displayObjectProperties =
+			{
+				width: 264 * this.scale,
+				height: 120 * this.scale,
+				textureScale: this.scale
+			};
+			textArea.stateToSkinFunction = skinSelector.updateValue;
+
+			textArea.paddingTop = 12 * this.scale;
+			textArea.paddingBottom = 10 * this.scale;
+			textArea.paddingLeft = textArea.paddingRight = 14 * this.scale;
+
+			textArea.textEditorProperties.textFormat = this.scrollTextTextFormat;
+			textArea.textEditorProperties.disabledTextFormat = this.scrollTextDisabledTextFormat;
+		}
+
 		protected function numericStepperTextInputInitializer(input:TextInput):void
 		{
 			const backgroundSkin:Scale9Image = new Scale9Image(this.backgroundSkinTextures, this.scale);
@@ -1525,6 +1599,12 @@ package feathers.themes
 			header.paddingLeft = header.paddingRight = 18 * this.scale;
 
 			header.titleProperties.elementFormat = this.headerElementFormat;
+		}
+
+		protected function panelScreenHeaderInitializer(header:Header):void
+		{
+			this.headerInitializer(header);
+			header.useExtraPaddingForOSStatusBar = true;
 		}
 
 		protected function pickerListInitializer(list:PickerList):void

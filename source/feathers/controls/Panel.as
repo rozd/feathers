@@ -1,6 +1,6 @@
 /*
 Feathers
-Copyright 2012-2013 Joshua Tynjala. All Rights Reserved.
+Copyright 2012-2014 Joshua Tynjala. All Rights Reserved.
 
 This program is free software. You can redistribute and/or modify it in
 accordance with the terms of the accompanying license agreement.
@@ -742,7 +742,7 @@ package feathers.controls
 			const factory:Function = this._headerFactory != null ? this._headerFactory : defaultHeaderFactory;
 			const headerName:String = this._customHeaderName != null ? this._customHeaderName : this.headerName;
 			this.header = IFeathersControl(factory());
-			this.header.nameList.add(headerName);
+			this.header.styleNameList.add(headerName);
 			this.header.addEventListener(FeathersEventType.RESIZE, header_resizeHandler);
 			displayHeader = DisplayObject(this.header);
 			this.addRawChild(displayHeader);
@@ -777,7 +777,7 @@ package feathers.controls
 			}
 			const footerName:String = this._customFooterName != null ? this._customFooterName : this.footerName;
 			this.footer = IFeathersControl(this._footerFactory());
-			this.footer.nameList.add(footerName);
+			this.footer.styleNameList.add(footerName);
 			this.footer.addEventListener(FeathersEventType.RESIZE, footer_resizeHandler);
 			displayFooter = DisplayObject(this.footer);
 			this.addRawChild(displayFooter);

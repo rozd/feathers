@@ -1,6 +1,6 @@
 /*
 Feathers
-Copyright 2012-2013 Joshua Tynjala. All Rights Reserved.
+Copyright 2012-2014 Joshua Tynjala. All Rights Reserved.
 
 This program is free software. You can redistribute and/or modify it in
 accordance with the terms of the accompanying license agreement.
@@ -22,6 +22,21 @@ package feathers.controls
 
 	/**
 	 * Dispatched when the selected tab changes.
+	 *
+	 * <p>The properties of the event object have the following values:</p>
+	 * <table class="innertable">
+	 * <tr><th>Property</th><th>Value</th></tr>
+	 * <tr><td><code>bubbles</code></td><td>false</td></tr>
+	 * <tr><td><code>currentTarget</code></td><td>The Object that defines the
+	 *   event listener that handles the event. For example, if you use
+	 *   <code>myButton.addEventListener()</code> to register an event listener,
+	 *   myButton is the value of the <code>currentTarget</code>.</td></tr>
+	 * <tr><td><code>data</code></td><td>null</td></tr>
+	 * <tr><td><code>target</code></td><td>The Object that dispatched the event;
+	 *   it is not always the Object listening for the event. Use the
+	 *   <code>currentTarget</code> property to always access the Object
+	 *   listening for the event.</td></tr>
+	 * </table>
 	 *
 	 * @eventType starling.events.Event.CHANGE
 	 */
@@ -1646,15 +1661,15 @@ package feathers.controls
 				tab = Button(factory());
 				if(this._customFirstTabName)
 				{
-					tab.nameList.add(this._customFirstTabName);
+					tab.styleNameList.add(this._customFirstTabName);
 				}
 				else if(this._customTabName)
 				{
-					tab.nameList.add(this._customTabName);
+					tab.styleNameList.add(this._customTabName);
 				}
 				else
 				{
-					tab.nameList.add(this.firstTabName);
+					tab.styleNameList.add(this.firstTabName);
 				}
 				tab.isToggle = true;
 				this.addChild(tab);
@@ -1679,15 +1694,15 @@ package feathers.controls
 				tab = Button(factory());
 				if(this._customLastTabName)
 				{
-					tab.nameList.add(this._customLastTabName);
+					tab.styleNameList.add(this._customLastTabName);
 				}
 				else if(this._customTabName)
 				{
-					tab.nameList.add(this._customTabName);
+					tab.styleNameList.add(this._customTabName);
 				}
 				else
 				{
-					tab.nameList.add(this.lastTabName);
+					tab.styleNameList.add(this.lastTabName);
 				}
 				tab.isToggle = true;
 				this.addChild(tab);
@@ -1706,11 +1721,11 @@ package feathers.controls
 				var tab:Button = this._tabFactory();
 				if(this._customTabName)
 				{
-					tab.nameList.add(this._customTabName);
+					tab.styleNameList.add(this._customTabName);
 				}
 				else
 				{
-					tab.nameList.add(this.tabName);
+					tab.styleNameList.add(this.tabName);
 				}
 				tab.isToggle = true;
 				this.addChild(tab);

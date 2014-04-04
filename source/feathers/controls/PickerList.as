@@ -1,6 +1,6 @@
 /*
 Feathers
-Copyright 2012-2013 Joshua Tynjala. All Rights Reserved.
+Copyright 2012-2014 Joshua Tynjala. All Rights Reserved.
 
 This program is free software. You can redistribute and/or modify it in
 accordance with the terms of the accompanying license agreement.
@@ -22,6 +22,21 @@ package feathers.controls
 
 	/**
 	 * Dispatched when the selected item changes.
+	 *
+	 * <p>The properties of the event object have the following values:</p>
+	 * <table class="innertable">
+	 * <tr><th>Property</th><th>Value</th></tr>
+	 * <tr><td><code>bubbles</code></td><td>false</td></tr>
+	 * <tr><td><code>currentTarget</code></td><td>The Object that defines the
+	 *   event listener that handles the event. For example, if you use
+	 *   <code>myButton.addEventListener()</code> to register an event listener,
+	 *   myButton is the value of the <code>currentTarget</code>.</td></tr>
+	 * <tr><td><code>data</code></td><td>null</td></tr>
+	 * <tr><td><code>target</code></td><td>The Object that dispatched the event;
+	 *   it is not always the Object listening for the event. Use the
+	 *   <code>currentTarget</code> property to always access the Object
+	 *   listening for the event.</td></tr>
+	 * </table>
 	 *
 	 * @eventType starling.events.Event.CHANGE
 	 */
@@ -893,6 +908,46 @@ package feathers.controls
 		/**
 		 * @private
 		 */
+		protected var _toggleButtonOnOpenAndClose:Boolean = false;
+
+		/**
+		 * Determines if the <code>isSelected</code> property of the picker
+		 * list's button sub-component is toggled when the list is opened and
+		 * closed.
+		 *
+		 * <p>In the following example, the button is toggled on open and close:</p>
+		 *
+		 * <listing version="3.0">
+		 * list.toggleButtonOnOpenAndClose = true;</listing>
+		 *
+		 * @default false
+		 *
+		 * @see feathers.controls.Button#isSelected
+		 */
+		public function get toggleButtonOnOpenAndClose():Boolean
+		{
+			return this._toggleButtonOnOpenAndClose;
+		}
+
+		/**
+		 * @private
+		 */
+		public function set toggleButtonOnOpenAndClose(value:Boolean):void
+		{
+			if(this._toggleButtonOnOpenAndClose == value)
+			{
+				return;
+			}
+			this._toggleButtonOnOpenAndClose = value;
+			if(!this._toggleButtonOnOpenAndClose && this.button)
+			{
+				this.button.isSelected = false;
+			}
+		}
+
+		/**
+		 * @private
+		 */
 		protected var _isOpenListPending:Boolean = false;
 
 		/**
@@ -1186,7 +1241,7 @@ package feathers.controls
 			const factory:Function = this._buttonFactory != null ? this._buttonFactory : defaultButtonFactory;
 			const buttonName:String = this._customButtonName != null ? this._customButtonName : this.buttonName;
 			this.button = Button(factory());
-			this.button.nameList.add(buttonName);
+			this.button.styleNameList.add(buttonName);
 			this.button.addEventListener(Event.TRIGGERED, button_triggeredHandler);
 			this.addChild(this.button);
 		}
@@ -1215,10 +1270,12 @@ package feathers.controls
 			const factory:Function = this._listFactory != null ? this._listFactory : defaultListFactory;
 			const listName:String = this._customListName != null ? this._customListName : this.listName;
 			this.list = List(factory());
-			this.list.nameList.add(listName);
+			this.list.styleNameList.add(listName);
 			this.list.addEventListener(Event.CHANGE, list_changeHandler);
 			this.list.addEventListener(FeathersEventType.RENDERER_ADD, list_rendererAddHandler);
 			this.list.addEventListener(FeathersEventType.RENDERER_REMOVE, list_rendererRemoveHandler);
+			this.list.addEventListener(Event.ADDED_TO_STAGE, list_addedToStageHandler);
+			this.list.addEventListener(Event.REMOVED_FROM_STAGE, list_removedFromStageHandler);
 		}
 		
 		/**
@@ -1340,6 +1397,30 @@ package feathers.controls
 		protected function list_rendererRemoveHandler(event:Event, renderer:IListItemRenderer):void
 		{
 			renderer.removeEventListener(Event.TRIGGERED, renderer_triggeredHandler);
+		}
+
+		/**
+		 * @private
+		 */
+		protected function list_addedToStageHandler(event:Event):void
+		{
+			if(!this._toggleButtonOnOpenAndClose)
+			{
+				return;
+			}
+			this.button.isSelected = true;
+		}
+
+		/**
+		 * @private
+		 */
+		protected function list_removedFromStageHandler(event:Event):void
+		{
+			if(!this._toggleButtonOnOpenAndClose)
+			{
+				return;
+			}
+			this.button.isSelected = false;
 		}
 
 		/**

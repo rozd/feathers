@@ -1,3 +1,10 @@
+/*
+Feathers
+Copyright 2012-2014 Joshua Tynjala. All Rights Reserved.
+
+This program is free software. You can redistribute and/or modify it in
+accordance with the terms of the accompanying license agreement.
+*/
 package feathers.controls
 {
 	import feathers.core.FeathersControl;
@@ -24,6 +31,21 @@ package feathers.controls
 	 * the event object will contain the item from the <code>ButtonGroup</code>
 	 * data provider for the button that is triggered. If no button is
 	 * triggered, then the <code>data</code> property will be <code>null</code>.
+	 *
+	 * <p>The properties of the event object have the following values:</p>
+	 * <table class="innertable">
+	 * <tr><th>Property</th><th>Value</th></tr>
+	 * <tr><td><code>bubbles</code></td><td>false</td></tr>
+	 * <tr><td><code>currentTarget</code></td><td>The Object that defines the
+	 *   event listener that handles the event. For example, if you use
+	 *   <code>myButton.addEventListener()</code> to register an event listener,
+	 *   myButton is the value of the <code>currentTarget</code>.</td></tr>
+	 * <tr><td><code>data</code></td><td>null</td></tr>
+	 * <tr><td><code>target</code></td><td>The Object that dispatched the event;
+	 *   it is not always the Object listening for the event. Use the
+	 *   <code>currentTarget</code> property to always access the Object
+	 *   listening for the event.</td></tr>
+	 * </table>
 	 *
 	 * @eventType starling.events.Event.CLOSE
 	 */
@@ -823,7 +845,7 @@ package feathers.controls
 			const factory:Function = this._messageFactory != null ? this._messageFactory : FeathersControl.defaultTextRendererFactory;
 			this.messageTextRenderer = ITextRenderer(factory());
 			const uiTextRenderer:IFeathersControl = IFeathersControl(this.messageTextRenderer);
-			uiTextRenderer.nameList.add(this.messageName);
+			uiTextRenderer.styleNameList.add(this.messageName);
 			uiTextRenderer.touchable = false;
 			this.addChild(DisplayObject(this.messageTextRenderer));
 		}

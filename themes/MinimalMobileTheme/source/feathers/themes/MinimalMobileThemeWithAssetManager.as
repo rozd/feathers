@@ -29,6 +29,7 @@ package feathers.themes
 	import feathers.controls.ButtonGroup;
 	import feathers.controls.Callout;
 	import feathers.controls.Check;
+	import feathers.controls.Drawers;
 	import feathers.controls.GroupedList;
 	import feathers.controls.Header;
 	import feathers.controls.ImageLoader;
@@ -48,6 +49,7 @@ package feathers.themes
 	import feathers.controls.SimpleScrollBar;
 	import feathers.controls.Slider;
 	import feathers.controls.TabBar;
+	import feathers.controls.TextArea;
 	import feathers.controls.TextInput;
 	import feathers.controls.ToggleSwitch;
 	import feathers.controls.popups.CalloutPopUpContentManager;
@@ -88,6 +90,7 @@ package feathers.themes
 	import starling.events.Event;
 	import starling.text.BitmapFont;
 	import starling.text.TextField;
+	import starling.textures.SubTexture;
 	import starling.textures.Texture;
 	import starling.textures.TextureAtlas;
 	import starling.textures.TextureSmoothing;
@@ -95,13 +98,29 @@ package feathers.themes
 
 	[Event(name="complete",type="starling.events.Event")]
 
+	/**
+	 * The "Minimal" theme for mobile Feathers apps.
+	 *
+	 * <p>This version of the theme requires loading assets at runtime. To use
+	 * embedded assets, see <code>MinimalMobileTheme</code> instead.</p>
+	 *
+	 * <p>To use this theme, the following files must be included when packaging
+	 * your app:</p>
+	 * <ul>
+	 *     <li>images/minimal.png</li>
+	 *     <li>images/minimal.xml</li>
+	 *     <li>fonts/pf_ronda_seven.fnt</li>
+	 * </ul>
+	 *
+	 * @see http://wiki.starling-framework.org/feathers/theme-assets
+	 */
 	public class MinimalMobileThemeWithAssetManager extends DisplayListWatcher
 	{
-		public static const COMPONENT_NAME_PICKER_LIST_ITEM_RENDERER:String = "feathers-mobile-picker-list-item-renderer";
 		public static const FONT_NAME:String = "PF Ronda Seven";
 
-		protected static const THEME_NAME_HORIZONTAL_SLIDER_MINIMUM_TRACK:String = "metal-works-mobile-horizontal-slider-minimum-track";
-		protected static const THEME_NAME_VERTICAL_SLIDER_MINIMUM_TRACK:String = "metal-works-mobile-vertical-slider-minimum-track";
+		protected static const THEME_NAME_PICKER_LIST_ITEM_RENDERER:String = "minimal-mobile-picker-list-item-renderer";
+		protected static const THEME_NAME_HORIZONTAL_SLIDER_MINIMUM_TRACK:String = "minimal-mobile-horizontal-slider-minimum-track";
+		protected static const THEME_NAME_VERTICAL_SLIDER_MINIMUM_TRACK:String = "minimal-mobile-vertical-slider-minimum-track";
 
 		protected static const ATLAS_NAME:String = "minimal";
 		protected static const FONT_TEXTURE_NAME:String = "pf_ronda_seven_0";
@@ -123,8 +142,8 @@ package feathers.themes
 		protected static const LIST_HEADER_BACKGROUND_COLOR:uint = 0xeeeeee;
 		protected static const PRIMARY_TEXT_COLOR:uint = 0x666666;
 		protected static const DISABLED_TEXT_COLOR:uint = 0x999999;
-		protected static const MODAL_OVERLAY_COLOR:uint = 0x666666;
-		protected static const MODAL_OVERLAY_ALPHA:Number = 0.8;
+		protected static const MODAL_OVERLAY_COLOR:uint = 0xcccccc;
+		protected static const MODAL_OVERLAY_ALPHA:Number = 0.4;
 
 		protected static const ORIGINAL_DPI_IPHONE_RETINA:int = 326;
 		protected static const ORIGINAL_DPI_IPAD_RETINA:int = 264;
@@ -147,6 +166,17 @@ package feathers.themes
 			const quad:Quad = new Quad(100, 100, MODAL_OVERLAY_COLOR);
 			quad.alpha = MODAL_OVERLAY_ALPHA;
 			return quad;
+		}
+
+		protected static function textureValueTypeHandler(value:Texture, oldDisplayObject:DisplayObject = null):DisplayObject
+		{
+			var displayObject:ImageLoader = oldDisplayObject as ImageLoader;
+			if(!displayObject)
+			{
+				displayObject = new ImageLoader();
+			}
+			displayObject.source = value;
+			return displayObject;
 		}
 
 		public function MinimalMobileThemeWithAssetManager(assets:Object = null, assetManager:AssetManager = null, container:DisplayObjectContainer = null, scaleToDPI:Boolean = true)
@@ -555,6 +585,9 @@ package feathers.themes
 			//check
 			this.setInitializerForClass(Check, checkInitializer);
 
+			//check
+			this.setInitializerForClass(Drawers, drawersInitializer);
+
 			//grouped list (see also: item renderers)
 			this.setInitializerForClass(GroupedList, groupedListInitializer);
 			this.setInitializerForClass(GroupedList, groupedListInsetInitializer, GroupedList.ALTERNATE_NAME_INSET_GROUPED_LIST);
@@ -564,7 +597,7 @@ package feathers.themes
 
 			//item renderers for lists
 			this.setInitializerForClass(DefaultListItemRenderer, itemRendererInitializer);
-			this.setInitializerForClass(DefaultListItemRenderer, pickerListItemRendererInitializer, COMPONENT_NAME_PICKER_LIST_ITEM_RENDERER);
+			this.setInitializerForClass(DefaultListItemRenderer, pickerListItemRendererInitializer, THEME_NAME_PICKER_LIST_ITEM_RENDERER);
 			this.setInitializerForClass(DefaultGroupedListItemRenderer, itemRendererInitializer);
 
 			//header and footer renderers for grouped list
@@ -591,6 +624,9 @@ package feathers.themes
 			this.setInitializerForClass(Panel, panelInitializer);
 			this.setInitializerForClass(Header, panelHeaderInitializer, Panel.DEFAULT_CHILD_NAME_HEADER);
 
+			//panel screen
+			this.setInitializerForClass(Header, panelScreenHeaderInitializer, PanelScreen.DEFAULT_CHILD_NAME_HEADER);
+
 			//picker list (see also: item renderers)
 			this.setInitializerForClass(PickerList, pickerListInitializer);
 			this.setInitializerForClass(Button, pickerListButtonInitializer, PickerList.DEFAULT_CHILD_NAME_BUTTON);
@@ -611,6 +647,7 @@ package feathers.themes
 			//scroll text
 			this.setInitializerForClass(ScrollText, scrollTextInitializer);
 			this.setInitializerForClass(BitmapFontTextRenderer, itemRendererAccessoryLabelInitializer, BaseDefaultItemRenderer.DEFAULT_CHILD_NAME_ACCESSORY_LABEL);
+			this.setInitializerForClass(BitmapFontTextRenderer, itemRendererIconLabelInitializer, BaseDefaultItemRenderer.DEFAULT_CHILD_NAME_ICON_LABEL);
 
 			//simple scroll bar
 			this.setInitializerForClass(Button, simpleScrollBarThumbInitializer, SimpleScrollBar.DEFAULT_CHILD_NAME_THUMB);
@@ -627,6 +664,9 @@ package feathers.themes
 			//text input
 			this.setInitializerForClass(TextInput, textInputInitializer);
 			this.setInitializerForClass(TextInput, searchTextInputInitializer, TextInput.ALTERNATE_NAME_SEARCH_TEXT_INPUT);
+
+			//text area
+			this.setInitializerForClass(TextArea, textAreaInitializer);
 
 			//toggle switch
 			this.setInitializerForClass(ToggleSwitch, toggleSwitchInitializer);
@@ -704,6 +744,11 @@ package feathers.themes
 			renderer.textFormat = this.primaryTextFormat;
 		}
 
+		protected function itemRendererIconLabelInitializer(renderer:BitmapFontTextRenderer):void
+		{
+			renderer.textFormat = this.primaryTextFormat;
+		}
+
 		protected function alertMessageInitializer(renderer:BitmapFontTextRenderer):void
 		{
 			renderer.wordWrap = true;
@@ -713,6 +758,7 @@ package feathers.themes
 		protected function scrollTextInitializer(text:ScrollText):void
 		{
 			text.textFormat = new TextFormat("PF Ronda Seven,Roboto,Helvetica,Arial,_sans", this.fontSize, PRIMARY_TEXT_COLOR);
+			text.disabledTextFormat = new TextFormat("PF Ronda Seven,Roboto,Helvetica,Arial,_sans", this.fontSize, DISABLED_TEXT_COLOR);
 			text.paddingTop = text.paddingBottom = text.paddingLeft = 32 * this.scale;
 			text.paddingRight = 36 * this.scale;
 		}
@@ -726,6 +772,7 @@ package feathers.themes
 			button.paddingTop = button.paddingBottom = 8 * this.scale;
 			button.paddingLeft = button.paddingRight = 16 * this.scale;
 			button.gap = 12 * this.scale;
+			button.minGap = 12 * this.scale;
 			button.minWidth = 66 * this.scale;
 			button.minHeight = 66 * this.scale;
 			button.minTouchWidth = button.minTouchHeight = 88 * this.scale;
@@ -859,6 +906,7 @@ package feathers.themes
 			button.paddingTop = button.paddingBottom = 8 * this.scale;
 			button.paddingLeft = button.paddingRight = 16 * this.scale;
 			button.gap = 12 * this.scale;
+			button.minGap = 12 * this.scale;
 			button.minWidth = 88 * this.scale;
 			button.minHeight = 88 * this.scale;
 			button.minTouchWidth = button.minTouchHeight = 88 * this.scale;
@@ -1011,15 +1059,16 @@ package feathers.themes
 
 		protected function checkInitializer(check:Check):void
 		{
-			const iconSelector:SmartDisplayObjectStateValueSelector = new SmartDisplayObjectStateValueSelector();
+			var iconSelector:SmartDisplayObjectStateValueSelector = new SmartDisplayObjectStateValueSelector();
+			iconSelector.setValueTypeHandler(SubTexture, textureValueTypeHandler);
 			iconSelector.defaultValue = this.checkIconTexture;
 			iconSelector.defaultSelectedValue = this.checkSelectedIconTexture;
 			iconSelector.setValueForState(this.checkDisabledIconTexture, Button.STATE_DISABLED, false);
 			iconSelector.setValueForState(this.checkSelectedDisabledIconTexture, Button.STATE_DISABLED, true);
 			iconSelector.displayObjectProperties =
 			{
-				scaleX: this.scale,
-				scaleY: this.scale
+				textureScale: this.scale,
+				snapToPixels: true
 			};
 			check.stateToIconFunction = iconSelector.updateValue;
 
@@ -1035,15 +1084,16 @@ package feathers.themes
 
 		protected function radioInitializer(radio:Radio):void
 		{
-			const iconSelector:SmartDisplayObjectStateValueSelector = new SmartDisplayObjectStateValueSelector();
+			var iconSelector:SmartDisplayObjectStateValueSelector = new SmartDisplayObjectStateValueSelector();
+			iconSelector.setValueTypeHandler(SubTexture, textureValueTypeHandler);
 			iconSelector.defaultValue = this.radioIconTexture;
 			iconSelector.defaultSelectedValue = this.radioSelectedIconTexture;
 			iconSelector.setValueForState(this.radioDisabledIconTexture, Button.STATE_DISABLED, false);
 			iconSelector.setValueForState(this.radioSelectedDisabledIconTexture, Button.STATE_DISABLED, true);
 			iconSelector.displayObjectProperties =
 			{
-				scaleX: this.scale,
-				scaleY: this.scale
+				textureScale: this.scale,
+				snapToPixels: true
 			};
 			radio.stateToIconFunction = iconSelector.updateValue;
 
@@ -1081,8 +1131,10 @@ package feathers.themes
 			renderer.minWidth = renderer.minHeight = 88 * this.scale;
 
 			renderer.gap = 10 * this.scale;
+			renderer.minGap = 10 * this.scale;
 			renderer.iconPosition = Button.ICON_POSITION_LEFT;
 			renderer.accessoryGap = Number.POSITIVE_INFINITY;
+			renderer.minAccessoryGap = 10 * this.scale;
 			renderer.accessoryPosition = BaseDefaultItemRenderer.ACCESSORY_POSITION_RIGHT;
 
 			renderer.accessoryLoaderFactory = this.imageLoaderFactory;
@@ -1108,7 +1160,18 @@ package feathers.themes
 			defaultSelectedIcon.snapToPixels = true;
 			renderer.defaultSelectedIcon = defaultSelectedIcon;
 
-			const defaultIcon:Quad = new Quad(defaultSelectedIcon.width, defaultSelectedIcon.height, 0xff00ff);
+			var frame:Rectangle = this.pickerListItemSelectedIconTexture.frame;
+			if(frame)
+			{
+				var iconWidth:Number = frame.width;
+				var iconHeight:Number = frame.height;
+			}
+			else
+			{
+				iconWidth = this.pickerListItemSelectedIconTexture.width;
+				iconHeight = this.pickerListItemSelectedIconTexture.height;
+			}
+			const defaultIcon:Quad = new Quad(iconWidth, iconHeight, 0xff00ff);
 			defaultIcon.alpha = 0;
 			renderer.defaultIcon = defaultIcon;
 
@@ -1123,6 +1186,7 @@ package feathers.themes
 
 			renderer.iconPosition = Button.ICON_POSITION_RIGHT;
 			renderer.gap = Number.POSITIVE_INFINITY;
+			renderer.minGap = 10 * this.scale;
 
 			renderer.accessoryLoaderFactory = this.imageLoaderFactory;
 			renderer.iconLoaderFactory = this.imageLoaderFactory;
@@ -1219,7 +1283,7 @@ package feathers.themes
 					list.listProperties.paddingBottom = list.listProperties.paddingLeft = 4 * this.scale;
 			}
 
-			list.listProperties.itemRendererName = COMPONENT_NAME_PICKER_LIST_ITEM_RENDERER;
+			list.listProperties.itemRendererName = THEME_NAME_PICKER_LIST_ITEM_RENDERER;
 		}
 
 		protected function pickerListButtonInitializer(button:Button):void
@@ -1230,8 +1294,9 @@ package feathers.themes
 			const defaultIcon:Image = new Image(dropDownArrowTexture);
 			defaultIcon.scaleX = defaultIcon.scaleY = this.scale;
 			button.defaultIcon = defaultIcon;
-			button.gap = Number.POSITIVE_INFINITY, //fill as completely as possible
-				button.iconPosition = Button.ICON_POSITION_RIGHT;
+			button.gap = Number.POSITIVE_INFINITY; //fill as completely as possible
+			button.minGap = 12 * this.scale;
+			button.iconPosition = Button.ICON_POSITION_RIGHT;
 			button.horizontalAlign =  Button.HORIZONTAL_ALIGN_LEFT;
 		}
 
@@ -1268,6 +1333,12 @@ package feathers.themes
 
 			header.titleProperties.textFormat = this.primaryTextFormat;
 			header.titleProperties.disabledTextFormat = this.disabledTextFormat;
+		}
+
+		protected function panelScreenHeaderInitializer(header:Header):void
+		{
+			this.panelHeaderInitializer(header);
+			header.useExtraPaddingForOSStatusBar = true;
 		}
 
 		protected function baseTextInputInitializer(input:TextInput):void
@@ -1309,6 +1380,26 @@ package feathers.themes
 			searchIcon.source = this.searchIconTexture;
 			searchIcon.snapToPixels = true;
 			input.defaultIcon = searchIcon;
+		}
+
+		protected function textAreaInitializer(textArea:TextArea):void
+		{
+			textArea.textEditorProperties.textFormat = new TextFormat("PF Ronda Seven,Roboto,Helvetica,Arial,_sans", this.fontSize, PRIMARY_TEXT_COLOR);
+			textArea.textEditorProperties.disabledTextFormat = new TextFormat("PF Ronda Seven,Roboto,Helvetica,Arial,_sans", this.fontSize, DISABLED_TEXT_COLOR);
+
+			textArea.paddingTop = 14 * this.scale;
+			textArea.paddingBottom = 8 * this.scale;
+			textArea.paddingLeft = textArea.paddingRight = 16 * this.scale;
+
+			var backgroundSkin:Scale9Image = new Scale9Image(insetBackgroundSkinTextures, this.scale);
+			backgroundSkin.width = 264 * this.scale;
+			backgroundSkin.height = 132 * this.scale;
+			textArea.backgroundSkin = backgroundSkin;
+
+			var backgroundDisabledSkin:Scale9Image = new Scale9Image(insetBackgroundDisabledSkinTextures, this.scale);
+			backgroundDisabledSkin.width = 264 * this.scale;
+			backgroundDisabledSkin.height = 132 * this.scale;
+			textArea.backgroundDisabledSkin = backgroundDisabledSkin;
 		}
 
 		protected function numericStepperTextInputInitializer(input:TextInput):void
@@ -1443,6 +1534,13 @@ package feathers.themes
 			backgroundSkin.width = 88 * this.scale;
 			backgroundSkin.height = 88 * this.scale;
 			container.backgroundSkin = backgroundSkin;
+		}
+
+		protected function drawersInitializer(drawers:Drawers):void
+		{
+			var overlaySkin:Quad = new Quad(10, 10, MODAL_OVERLAY_COLOR);
+			overlaySkin.alpha = MODAL_OVERLAY_ALPHA;
+			drawers.overlaySkin = overlaySkin;
 		}
 
 		protected function root_addedToStageHandler(event:Event):void

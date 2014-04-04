@@ -1,6 +1,6 @@
 /*
 Feathers
-Copyright 2012-2013 Joshua Tynjala. All Rights Reserved.
+Copyright 2012-2014 Joshua Tynjala. All Rights Reserved.
 
 This program is free software. You can redistribute and/or modify it in
 accordance with the terms of the accompanying license agreement.
@@ -611,7 +611,7 @@ package feathers.controls.supportClasses
 			//final validation to avoid juggler next frame issues
 			this.validateItemRenderers();
 		}
-		
+
 		private function invalidateParent(flag:String = INVALIDATION_FLAG_ALL):void
 		{
 			Scroller(this.parent).invalidate(flag);
@@ -725,10 +725,6 @@ package feathers.controls.supportClasses
 			{
 				this.refreshOneItemRendererStyles(renderer);
 			}
-			if(this._typicalItemRenderer && !this._typicalItemIsInDataProvider)
-			{
-				this.refreshOneItemRendererStyles(this._typicalItemRenderer);
-			}
 		}
 
 		private function refreshOneItemRendererStyles(renderer:IListItemRenderer):void
@@ -807,23 +803,30 @@ package feathers.controls.supportClasses
 
 		private function refreshRenderers():void
 		{
-			if(this._typicalItemRenderer && this._typicalItemIsInDataProvider)
+			if(this._typicalItemRenderer)
 			{
-				//this renderer is already is use by the typical item, so we
-				//don't want to allow it to be used by other items.
-				var inactiveIndex:int = this._inactiveRenderers.indexOf(this._typicalItemRenderer);
-				if(inactiveIndex >= 0)
+				if(this._typicalItemIsInDataProvider)
 				{
-					this._inactiveRenderers[inactiveIndex] = null;
+					//this renderer is already is use by the typical item, so we
+					//don't want to allow it to be used by other items.
+					var inactiveIndex:int = this._inactiveRenderers.indexOf(this._typicalItemRenderer);
+					if(inactiveIndex >= 0)
+					{
+						this._inactiveRenderers[inactiveIndex] = null;
+					}
+					//if refreshLayoutTypicalItem() was called, it will have already
+					//added the typical item renderer to the active renderers. if
+					//not, we need to do it here.
+					var activeRendererCount:int = this._activeRenderers.length;
+					if(activeRendererCount == 0)
+					{
+						this._activeRenderers[activeRendererCount] = this._typicalItemRenderer;
+					}
 				}
-				//if refreshLayoutTypicalItem() was called, it will have already
-				//added the typical item renderer to the active renderers. if
-				//not, we need to do it here.
-				var activeRendererCount:int = this._activeRenderers.length;
-				if(activeRendererCount == 0)
-				{
-					this._activeRenderers[activeRendererCount] = this._typicalItemRenderer;
-				}
+				//we need to set the typical item renderer's properties here
+				//because they may be needed for proper measurement in a virtual
+				//layout.
+				this.refreshOneItemRendererStyles(this._typicalItemRenderer);
 			}
 
 			this.findUnrenderedData();
@@ -834,17 +837,17 @@ package feathers.controls.supportClasses
 
 		private function findUnrenderedData():void
 		{
-			const itemCount:int = this._dataProvider ? this._dataProvider.length : 0;
-			const virtualLayout:IVirtualLayout = this._layout as IVirtualLayout;
-			const useVirtualLayout:Boolean = virtualLayout && virtualLayout.useVirtualLayout;
+			var itemCount:int = this._dataProvider ? this._dataProvider.length : 0;
+			var virtualLayout:IVirtualLayout = this._layout as IVirtualLayout;
+			var useVirtualLayout:Boolean = virtualLayout && virtualLayout.useVirtualLayout;
 			if(useVirtualLayout)
 			{
 				virtualLayout.measureViewPort(itemCount, this._viewPortBounds, HELPER_POINT);
 				virtualLayout.getVisibleIndicesAtScrollPosition(this._horizontalScrollPosition, this._verticalScrollPosition, HELPER_POINT.x, HELPER_POINT.y, itemCount, HELPER_VECTOR);
 			}
 
-			const unrenderedItemCount:int = useVirtualLayout ? HELPER_VECTOR.length : itemCount;
-			const canUseBeforeAndAfter:Boolean = this._layout is ITrimmedVirtualLayout && useVirtualLayout &&
+			var unrenderedItemCount:int = useVirtualLayout ? HELPER_VECTOR.length : itemCount;
+			var canUseBeforeAndAfter:Boolean = this._layout is ITrimmedVirtualLayout && useVirtualLayout &&
 				(!(this._layout is IVariableVirtualLayout) || !IVariableVirtualLayout(this._layout).hasVariableItemDimensions) &&
 				unrenderedItemCount > 0;
 			if(canUseBeforeAndAfter)
@@ -1014,7 +1017,7 @@ package feathers.controls.supportClasses
 					var uiRenderer:IFeathersControl = IFeathersControl(renderer);
 					if(this._itemRendererName && this._itemRendererName.length > 0)
 					{
-						uiRenderer.nameList.add(this._itemRendererName);
+						uiRenderer.styleNameList.add(this._itemRendererName);
 					}
 					this.addChild(DisplayObject(renderer));
 				}

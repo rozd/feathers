@@ -1,6 +1,6 @@
 /*
 Feathers
-Copyright 2012-2013 Joshua Tynjala. All Rights Reserved.
+Copyright 2012-2014 Joshua Tynjala. All Rights Reserved.
 
 This program is free software. You can redistribute and/or modify it in
 accordance with the terms of the accompanying license agreement.
@@ -15,7 +15,6 @@ package feathers.core
 	import starling.display.DisplayObjectContainer;
 	import starling.display.Quad;
 	import starling.display.Stage;
-	import starling.events.EnterFrameEvent;
 	import starling.events.Event;
 	import starling.events.ResizeEvent;
 
@@ -246,8 +245,8 @@ package feathers.core
 			{
 				IValidating(popUp).validate();
 			}
-			popUp.x = (stage.stageWidth - popUp.width) / 2;
-			popUp.y = (stage.stageHeight - popUp.height) / 2;
+			popUp.x = Math.round((stage.stageWidth - popUp.width) / 2);
+			popUp.y = Math.round((stage.stageHeight - popUp.height) / 2);
 		}
 
 		/**

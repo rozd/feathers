@@ -1,6 +1,6 @@
 /*
 Feathers
-Copyright 2012-2013 Joshua Tynjala. All Rights Reserved.
+Copyright 2012-2014 Joshua Tynjala. All Rights Reserved.
 
 This program is free software. You can redistribute and/or modify it in
 accordance with the terms of the accompanying license agreement.
@@ -17,15 +17,35 @@ package feathers.display
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
 
-	import starling.core.RenderSupport;
 	import starling.core.Starling;
 	import starling.display.DisplayObject;
 	import starling.display.Image;
 	import starling.display.QuadBatch;
 	import starling.display.Sprite;
 	import starling.events.Event;
+	import starling.textures.Texture;
 	import starling.textures.TextureSmoothing;
 	import starling.utils.MatrixUtil;
+
+	[Exclude(name="numChildren",kind="property")]
+	[Exclude(name="isFlattened",kind="property")]
+	[Exclude(name="addChild",kind="method")]
+	[Exclude(name="addChildAt",kind="method")]
+	[Exclude(name="broadcastEvent",kind="method")]
+	[Exclude(name="broadcastEventWith",kind="method")]
+	[Exclude(name="contains",kind="method")]
+	[Exclude(name="getChildAt",kind="method")]
+	[Exclude(name="getChildByName",kind="method")]
+	[Exclude(name="getChildIndex",kind="method")]
+	[Exclude(name="removeChild",kind="method")]
+	[Exclude(name="removeChildAt",kind="method")]
+	[Exclude(name="removeChildren",kind="method")]
+	[Exclude(name="setChildIndex",kind="method")]
+	[Exclude(name="sortChildren",kind="method")]
+	[Exclude(name="swapChildren",kind="method")]
+	[Exclude(name="swapChildrenAt",kind="method")]
+	[Exclude(name="flatten",kind="method")]
+	[Exclude(name="unflatten",kind="method")]
 
 	/**
 	 * Scales an image like a "pill" shape with three regions, either
@@ -83,7 +103,7 @@ package feathers.display
 		 * @private
 		 */
 		private var _layoutChanged:Boolean = true;
-		
+
 		/**
 		 * @private
 		 */
@@ -121,7 +141,12 @@ package feathers.display
 				return;
 			}
 			this._textures = value;
-			this._frame = this._textures.texture.frame;
+			var texture:Texture = this._textures.texture;
+			this._frame = texture.frame;
+			if(!this._frame)
+			{
+				this._frame = new Rectangle(0, 0, texture.width, texture.height);
+			}
 			this._layoutChanged = true;
 			this._renderingChanged = true;
 			this.invalidate();
@@ -460,7 +485,10 @@ package feathers.display
 
 				if(!helperImage)
 				{
-					helperImage = new Image(this._textures.first);
+					//because Scale3Textures enforces it, we know for sure that
+					//this texture will have a size greater than zero, so there
+					//won't be an error from Quad.
+					helperImage = new Image(this._textures.second);
 				}
 				helperImage.smoothing = this._smoothing;
 				helperImage.color = this._color;

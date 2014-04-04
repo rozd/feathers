@@ -1,13 +1,12 @@
 /*
 Feathers
-Copyright 2012-2013 Joshua Tynjala. All Rights Reserved.
+Copyright 2012-2014 Joshua Tynjala. All Rights Reserved.
 
 This program is free software. You can redistribute and/or modify it in
 accordance with the terms of the accompanying license agreement.
 */
 package feathers.layout
 {
-	import feathers.core.IFeathersControl;
 	import feathers.core.IValidating;
 
 	import flash.errors.IllegalOperationError;
@@ -20,6 +19,21 @@ package feathers.layout
 	/**
 	 * Dispatched when a property of the layout changes, indicating that a
 	 * redraw is probably needed.
+	 *
+	 * <p>The properties of the event object have the following values:</p>
+	 * <table class="innertable">
+	 * <tr><th>Property</th><th>Value</th></tr>
+	 * <tr><td><code>bubbles</code></td><td>false</td></tr>
+	 * <tr><td><code>currentTarget</code></td><td>The Object that defines the
+	 *   event listener that handles the event. For example, if you use
+	 *   <code>myButton.addEventListener()</code> to register an event listener,
+	 *   myButton is the value of the <code>currentTarget</code>.</td></tr>
+	 * <tr><td><code>data</code></td><td>null</td></tr>
+	 * <tr><td><code>target</code></td><td>The Object that dispatched the event;
+	 *   it is not always the Object listening for the event. Use the
+	 *   <code>currentTarget</code> property to always access the Object
+	 *   listening for the event.</td></tr>
+	 * </table>
 	 *
 	 * @eventType starling.events.Event.CHANGE
 	 */
@@ -1459,7 +1473,7 @@ package feathers.layout
 			else
 			{
 				result.x = 0;
-				result.y = this._paddingTop + ((tileHeight + this._verticalGap) * index / horizontalTileCount) + (height - tileHeight) / 2;
+				result.y = this._paddingTop + ((tileHeight + this._verticalGap) * int(index / horizontalTileCount)) - (height - tileHeight) / 2;
 			}
 			return result;
 		}

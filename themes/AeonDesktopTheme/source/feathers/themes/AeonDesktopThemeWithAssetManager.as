@@ -29,6 +29,7 @@ package feathers.themes
 	import feathers.controls.ButtonGroup;
 	import feathers.controls.Callout;
 	import feathers.controls.Check;
+	import feathers.controls.Drawers;
 	import feathers.controls.GroupedList;
 	import feathers.controls.Header;
 	import feathers.controls.IScrollBar;
@@ -97,6 +98,21 @@ package feathers.themes
 
 	[Event(name="complete",type="starling.events.Event")]
 
+	/**
+	 * The "Aeon" theme for desktop Feathers apps.
+	 *
+	 * <p>This version of the theme requires loading assets at runtime. To use
+	 * embedded assets, see <code>AeonDesktopTheme</code> instead.</p>
+	 *
+	 * <p>To use this theme, the following files must be included when packaging
+	 * your app:</p>
+	 * <ul>
+	 *     <li>images/aeon.png</li>
+	 *     <li>images/aeon.xml</li>
+	 * </ul>
+	 *
+	 * @see http://wiki.starling-framework.org/feathers/theme-assets
+	 */
 	public class AeonDesktopThemeWithAssetManager extends DisplayListWatcher
 	{
 		protected static const THEME_NAME_HORIZONTAL_SCROLL_BAR_INCREMENT_BUTTON:String = "aeon-horizontal-scroll-bar-increment-button";
@@ -615,6 +631,9 @@ package feathers.themes
 			//check
 			this.setInitializerForClass(Check, checkInitializer);
 
+			//drawers
+			this.setInitializerForClass(Drawers, drawersInitializer);
+
 			//grouped list (see also: item renderers)
 			this.setInitializerForClass(GroupedList, groupedListInitializer);
 
@@ -625,6 +644,7 @@ package feathers.themes
 			this.setInitializerForClass(DefaultListItemRenderer, defaultItemRendererInitializer);
 			this.setInitializerForClass(DefaultGroupedListItemRenderer, defaultItemRendererInitializer);
 			this.setInitializerForClass(TextFieldTextRenderer, itemRendererAccessoryLabelInitializer, BaseDefaultItemRenderer.DEFAULT_CHILD_NAME_ACCESSORY_LABEL);
+			this.setInitializerForClass(TextFieldTextRenderer, itemRendererIconLabelInitializer, BaseDefaultItemRenderer.DEFAULT_CHILD_NAME_ICON_LABEL);
 
 			//header and footer renderers for grouped list
 			this.setInitializerForClass(DefaultGroupedListHeaderOrFooterRenderer, defaultHeaderOrFooterRendererInitializer);
@@ -772,6 +792,7 @@ package feathers.themes
 		protected function scrollTextInitializer(text:ScrollText):void
 		{
 			text.textFormat = this.defaultTextFormat;
+			text.disabledTextFormat = this.disabledTextFormat;
 			text.paddingTop = text.paddingRight = text.paddingBottom = text.paddingLeft = 8;
 
 			text.interactionMode = ScrollText.INTERACTION_MODE_MOUSE;
@@ -782,6 +803,11 @@ package feathers.themes
 		}
 
 		protected function itemRendererAccessoryLabelInitializer(renderer:TextFieldTextRenderer):void
+		{
+			renderer.textFormat = this.defaultTextFormat;
+		}
+
+		protected function itemRendererIconLabelInitializer(renderer:TextFieldTextRenderer):void
 		{
 			renderer.textFormat = this.defaultTextFormat;
 		}
@@ -833,6 +859,7 @@ package feathers.themes
 			button.paddingTop = button.paddingBottom = 2;
 			button.paddingLeft = button.paddingRight = 10;
 			button.gap = 2;
+			button.minGap = 2;
 			button.minWidth = button.minHeight = 12;
 		}
 
@@ -848,6 +875,7 @@ package feathers.themes
 			button.stateToIconFunction = iconSelector.updateValue;
 
 			button.gap = Number.POSITIVE_INFINITY; //fill as completely as possible
+			button.minGap = 2;
 			button.horizontalAlign = Button.HORIZONTAL_ALIGN_LEFT;
 			button.iconPosition = Button.ICON_POSITION_RIGHT;
 			button.paddingRight = 6;
@@ -862,7 +890,15 @@ package feathers.themes
 		{
 			this.buttonInitializer(thumb);
 
-			thumb.width = thumb.height = buttonUpSkinTextures.texture.frame.height;
+			var frame:Rectangle = this.buttonUpSkinTextures.texture.frame;
+			if(frame)
+			{
+				thumb.width = thumb.height = buttonUpSkinTextures.texture.frame.height;
+			}
+			else
+			{
+				thumb.width = thumb.height = buttonUpSkinTextures.texture.height;
+			}
 		}
 
 		protected function horizontalScrollBarIncrementButtonInitializer(button:Button):void
@@ -1286,6 +1322,7 @@ package feathers.themes
 
 		protected function pageIndicatorInitializer(pageIndicator:PageIndicator):void
 		{
+			pageIndicator.interactionMode = PageIndicator.INTERACTION_MODE_PRECISE;
 			pageIndicator.normalSymbolFactory = this.pageIndicatorNormalSymbolFactory;
 			pageIndicator.selectedSymbolFactory = this.pageIndicatorSelectedSymbolFactory;
 			pageIndicator.gap = 12;
@@ -1372,6 +1409,13 @@ package feathers.themes
 			alert.maxWidth = alert.maxHeight = 300;
 		}
 
+		protected function drawersInitializer(drawers:Drawers):void
+		{
+			var overlaySkin:Quad = new Quad(10, 10, MODAL_OVERLAY_COLOR);
+			overlaySkin.alpha = MODAL_OVERLAY_ALPHA;
+			drawers.overlaySkin = overlaySkin;
+		}
+
 		protected function listInitializer(list:List):void
 		{
 			list.backgroundSkin = new Scale9Image(simpleBorderBackgroundSkinTextures);
@@ -1437,7 +1481,9 @@ package feathers.themes
 			renderer.paddingTop = renderer.paddingBottom = 2;
 			renderer.paddingRight = renderer.paddingLeft = 6;
 			renderer.gap = 2;
+			renderer.minGap = 2;
 			renderer.accessoryGap = Number.POSITIVE_INFINITY;
+			renderer.minAccessoryGap = 2;
 			renderer.minWidth = renderer.minHeight = 22;
 		}
 

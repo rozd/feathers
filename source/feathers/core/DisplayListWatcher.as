@@ -1,6 +1,6 @@
 /*
 Feathers
-Copyright 2012-2013 Joshua Tynjala. All Rights Reserved.
+Copyright 2012-2014 Joshua Tynjala. All Rights Reserved.
 
 This program is free software. You can redistribute and/or modify it in
 accordance with the terms of the accompanying license agreement.
@@ -35,7 +35,7 @@ package feathers.core
 	 * <listing version="3.0">
 	 * var button:Button = new Button();
 	 * button.label = "Click Me";
-	 * button.nameList.add( Button.ALTERNATE_NAME_CALL_TO_ACTION );
+	 * button.styleNameList.add( Button.ALTERNATE_NAME_CALL_TO_ACTION );
 	 * this.addChild( button );</listing>
 	 *
 	 * <p>The <code>callToActionButtonInitializer()</code> function will be called
