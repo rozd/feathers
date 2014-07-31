@@ -1,4 +1,4 @@
-# Feathers 1.4 PRERELEASE
+# Feathers 2.0 PRERELEASE
 
 Say hello to [Feathers](http://feathersui.com/), a library of light-weight, skinnable, and extensible UI controls for mobile and desktop. The components run on [Starling Framework](http://starling-framework.org/) and the [Adobe Flash runtimes](http://gaming.adobe.com/technologies/) — offering blazing fast GPU powered graphics to create a smooth and responsive experience. Build completely standalone, native applications on iOS, Android, Windows, and Mac OS X, or target Adobe Flash Player in desktop browsers. Created by [Josh Tynjala](http://twitter.com/joshtynjala), Feathers is free and open source.
 
@@ -13,10 +13,11 @@ Say hello to [Feathers](http://feathersui.com/), a library of light-weight, skin
 * [Github Project](https://github.com/joshtynjala/feathers)
 * [Like on Facebook](http://facebook.com/feathersui)
 
-## Requirements
+## Minimum Requirements
 
-* Adobe AIR 3.5 or Adobe Flash Player 11.5
-* Starling Framework 1.4.1
+* Adobe AIR 3.5 or newer for desktop or mobile apps
+* Adobe Flash Player 11.5 or newer for web browser apps
+* Starling Framework 1.5.1
 
 ## Downloads
 

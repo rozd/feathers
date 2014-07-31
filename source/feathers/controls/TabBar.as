@@ -16,6 +16,7 @@ package feathers.controls
 	import feathers.layout.LayoutBoundsResult;
 	import feathers.layout.VerticalLayout;
 	import feathers.layout.ViewPortBounds;
+	import feathers.skins.IStyleProvider;
 
 	import starling.display.DisplayObject;
 	import starling.events.Event;
@@ -142,6 +143,8 @@ package feathers.controls
 
 		/**
 		 * The tabs will be aligned vertically to the top edge of the tab bar.
+		 *
+		 * @see #verticalAlign
 		 */
 		public static const VERTICAL_ALIGN_TOP:String = "top";
 
@@ -171,18 +174,27 @@ package feathers.controls
 		public static const VERTICAL_ALIGN_JUSTIFY:String = "justify";
 
 		/**
-		 * The default value added to the <code>nameList</code> of the tabs.
+		 * The default value added to the <code>styleNameList</code> of the tabs.
 		 *
-		 * @see feathers.core.IFeathersControl#nameList
+		 * @see feathers.core.FeathersControl#styleNameList
 		 */
 		public static const DEFAULT_CHILD_NAME_TAB:String = "feathers-tab-bar-tab";
 
 		/**
+		 * The default <code>IStyleProvider</code> for all <code>TabBar</code>
+		 * components.
+		 *
+		 * @default null
+		 * @see feathers.core.FeathersControl#styleProvider
+		 */
+		public static var globalStyleProvider:IStyleProvider;
+
+		/**
 		 * @private
 		 */
-		protected static function defaultTabFactory():Button
+		protected static function defaultTabFactory():ToggleButton
 		{
-			return new Button();
+			return new ToggleButton();
 		}
 
 		/**
@@ -190,10 +202,11 @@ package feathers.controls
 		 */
 		public function TabBar()
 		{
+			super();
 		}
 
 		/**
-		 * The value added to the <code>nameList</code> of the tabs. This
+		 * The value added to the <code>styleNameList</code> of the tabs. This
 		 * variable is <code>protected</code> so that sub-classes can customize
 		 * the tab name in their constructors instead of using the default
 		 * name defined by <code>DEFAULT_CHILD_NAME_TAB</code>.
@@ -202,12 +215,12 @@ package feathers.controls
 		 * <code>customTabName</code>.</p>
 		 *
 		 * @see #customTabName
-		 * @see feathers.core.IFeathersControl#nameList
+		 * @see feathers.core.FeathersControl#styleNameList
 		 */
 		protected var tabName:String = DEFAULT_CHILD_NAME_TAB;
 
 		/**
-		 * The value added to the <code>nameList</code> of the first tab. This
+		 * The value added to the <code>styleNameList</code> of the first tab. This
 		 * variable is <code>protected</code> so that sub-classes can customize
 		 * the first tab name in their constructors instead of using the default
 		 * name defined by <code>DEFAULT_CHILD_NAME_TAB</code>.
@@ -216,12 +229,12 @@ package feathers.controls
 		 * <code>customFirstTabName</code>.</p>
 		 *
 		 * @see #customFirstTabName
-		 * @see feathers.core.IFeathersControl#nameList
+		 * @see feathers.core.FeathersControl#styleNameList
 		 */
 		protected var firstTabName:String = DEFAULT_CHILD_NAME_TAB;
 
 		/**
-		 * The value added to the <code>nameList</code> of the last tab. This
+		 * The value added to the <code>styleNameList</code> of the last tab. This
 		 * variable is <code>protected</code> so that sub-classes can customize
 		 * the last tab name in their constructors instead of using the default
 		 * name defined by <code>DEFAULT_CHILD_NAME_TAB</code>.
@@ -230,7 +243,7 @@ package feathers.controls
 		 * <code>customLastTabName</code>.</p>
 		 *
 		 * @see #customLastTabName
-		 * @see feathers.core.IFeathersControl#nameList
+		 * @see feathers.core.FeathersControl#styleNameList
 		 */
 		protected var lastTabName:String = DEFAULT_CHILD_NAME_TAB;
 
@@ -242,22 +255,22 @@ package feathers.controls
 		/**
 		 * @private
 		 */
-		protected var activeFirstTab:Button;
+		protected var activeFirstTab:ToggleButton;
 
 		/**
 		 * @private
 		 */
-		protected var inactiveFirstTab:Button;
+		protected var inactiveFirstTab:ToggleButton;
 
 		/**
 		 * @private
 		 */
-		protected var activeLastTab:Button;
+		protected var activeLastTab:ToggleButton;
 
 		/**
 		 * @private
 		 */
-		protected var inactiveLastTab:Button;
+		protected var inactiveLastTab:ToggleButton;
 
 		/**
 		 * @private
@@ -267,12 +280,20 @@ package feathers.controls
 		/**
 		 * @private
 		 */
-		protected var activeTabs:Vector.<Button> = new <Button>[];
+		protected var activeTabs:Vector.<ToggleButton> = new <ToggleButton>[];
 
 		/**
 		 * @private
 		 */
-		protected var inactiveTabs:Vector.<Button> = new <Button>[];
+		protected var inactiveTabs:Vector.<ToggleButton> = new <ToggleButton>[];
+
+		/**
+		 * @private
+		 */
+		override protected function get defaultStyleProvider():IStyleProvider
+		{
+			return TabBar.globalStyleProvider;
+		}
 
 		/**
 		 * @private
@@ -479,7 +500,7 @@ package feathers.controls
 		 *
 		 * @see #VERTICAL_ALIGN_TOP
 		 * @see #VERTICAL_ALIGN_MIDDLE
-		 * @see #VERTICAL_ALIGN_RIGHT
+		 * @see #VERTICAL_ALIGN_BOTTOM
 		 * @see #VERTICAL_ALIGN_JUSTIFY
 		 */
 		public function get verticalAlign():String
@@ -831,7 +852,7 @@ package feathers.controls
 		protected var _tabFactory:Function = defaultTabFactory;
 
 		/**
-		 * Creates a new tab. A tab must be an instance of <code>Button</code>.
+		 * Creates a new tab. A tab must be an instance of <code>ToggleButton</code>.
 		 * This factory can be used to change properties on the tabs when they
 		 * are first created. For instance, if you are skinning Feathers
 		 * components without a theme, you might use this factory to set skins
@@ -839,15 +860,15 @@ package feathers.controls
 		 *
 		 * <p>This function is expected to have the following signature:</p>
 		 *
-		 * <pre>function():Button</pre>
+		 * <pre>function():ToggleButton</pre>
 		 *
 		 * <p>In the following example, a custom tab factory is passed to the
 		 * tab bar:</p>
 		 *
 		 * <listing version="3.0">
-		 * tabs.tabFactory = function():Button
+		 * tabs.tabFactory = function():ToggleButton
 		 * {
-		 *     var tab:Button = new Button();
+		 *     var tab:ToggleButton = new ToggleButton();
 		 *     tab.defaultSkin = new Image( upTexture );
 		 *     tab.defaultSelectedSkin = new Image( selectedTexture );
 		 *     tab.downSkin = new Image( downTexture );
@@ -856,7 +877,7 @@ package feathers.controls
 		 *
 		 * @default null
 		 *
-		 * @see feathers.controls.Button
+		 * @see feathers.controls.ToggleButton
 		 * @see #firstTabFactory
 		 * @see #lastTabFactory
 		 */
@@ -886,7 +907,7 @@ package feathers.controls
 		/**
 		 * Creates a new first tab. If the <code>firstTabFactory</code> is
 		 * <code>null</code>, then the tab bar will use the <code>tabFactory</code>.
-		 * The first tab must be an instance of <code>Button</code>. This
+		 * The first tab must be an instance of <code>ToggleButton</code>. This
 		 * factory can be used to change properties on the first tab when it
 		 * is first created. For instance, if you are skinning Feathers
 		 * components without a theme, you might use this factory to set skins
@@ -894,15 +915,15 @@ package feathers.controls
 		 *
 		 * <p>This function is expected to have the following signature:</p>
 		 *
-		 * <pre>function():Button</pre>
+		 * <pre>function():ToggleButton</pre>
 		 *
 		 * <p>In the following example, a custom first tab factory is passed to the
 		 * tab bar:</p>
 		 *
 		 * <listing version="3.0">
-		 * tabs.firstTabFactory = function():Button
+		 * tabs.firstTabFactory = function():ToggleButton
 		 * {
-		 *     var tab:Button = new Button();
+		 *     var tab:ToggleButton = new ToggleButton();
 		 *     tab.defaultSkin = new Image( upTexture );
 		 *     tab.defaultSelectedSkin = new Image( selectedTexture );
 		 *     tab.downSkin = new Image( downTexture );
@@ -911,7 +932,7 @@ package feathers.controls
 		 *
 		 * @default null
 		 *
-		 * @see feathers.controls.Button
+		 * @see feathers.controls.ToggleButton
 		 * @see #tabFactory
 		 * @see #lastTabFactory
 		 */
@@ -949,15 +970,15 @@ package feathers.controls
 		 *
 		 * <p>This function is expected to have the following signature:</p>
 		 *
-		 * <pre>function():Button</pre>
+		 * <pre>function():ToggleButton</pre>
 		 *
 		 * <p>In the following example, a custom last tab factory is passed to the
 		 * tab bar:</p>
 		 *
 		 * <listing version="3.0">
-		 * tabs.lastTabFactory = function():Button
+		 * tabs.lastTabFactory = function():ToggleButton
 		 * {
-		 *     var tab:Button = new Button();
+		 *     var tab:ToggleButton = new Button();
 		 *     tab.defaultSkin = new Image( upTexture );
 		 *     tab.defaultSelectedSkin = new Image( selectedTexture );
 		 *     tab.downSkin = new Image( downTexture );
@@ -1000,13 +1021,13 @@ package feathers.controls
 		 * properties or to use different field names in the data provider.
 		 *
 		 * <p>This function is expected to have the following signature:</p>
-		 * <pre>function( tab:Button, item:Object ):void</pre>
+		 * <pre>function( tab:ToggleButton, item:Object ):void</pre>
 		 *
 		 * <p>In the following example, a custom tab initializer is passed to the
 		 * tab bar:</p>
 		 *
 		 * <listing version="3.0">
-		 * tabs.tabInitializer = function( tab:Button, item:Object ):void
+		 * tabs.tabInitializer = function( tab:ToggleButton, item:Object ):void
 		 * {
 		 *     tab.label = item.text;
 		 *     tab.defaultIcon = item.icon;
@@ -1121,7 +1142,7 @@ package feathers.controls
 		 */
 		public function get selectedItem():Object
 		{
-			const index:int = this.selectedIndex;
+			var index:int = this.selectedIndex;
 			if(!this._dataProvider || index < 0 || index >= this._dataProvider.length)
 			{
 				return null;
@@ -1166,8 +1187,7 @@ package feathers.controls
 		 * @default null
 		 *
 		 * @see #DEFAULT_CHILD_NAME_TAB
-		 * @see feathers.core.FeathersControl#nameList
-		 * @see feathers.core.DisplayListWatcher
+		 * @see feathers.core.FeathersControl#styleNameList
 		 */
 		public function get customTabName():String
 		{
@@ -1210,8 +1230,7 @@ package feathers.controls
 		 *
 		 * @default null
 		 *
-		 * @see feathers.core.FeathersControl#nameList
-		 * @see feathers.core.DisplayListWatcher
+		 * @see feathers.core.FeathersControl#styleNameList
 		 */
 		public function get customFirstTabName():String
 		{
@@ -1254,8 +1273,7 @@ package feathers.controls
 		 *
 		 * @default null
 		 *
-		 * @see feathers.core.FeathersControl#nameList
-		 * @see feathers.core.DisplayListWatcher
+		 * @see feathers.core.FeathersControl#styleNameList
 		 */
 		public function get customLastTabName():String
 		{
@@ -1333,7 +1351,7 @@ package feathers.controls
 			}
 			if(!(value is PropertyProxy))
 			{
-				const newValue:PropertyProxy = new PropertyProxy();
+				var newValue:PropertyProxy = new PropertyProxy();
 				for(var propertyName:String in value)
 				{
 					newValue[propertyName] = value[propertyName];
@@ -1376,11 +1394,11 @@ package feathers.controls
 		 */
 		override protected function draw():void
 		{
-			const dataInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_DATA);
-			const stylesInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STYLES);
-			const stateInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STATE);
-			const selectionInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_SELECTED);
-			const tabFactoryInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_TAB_FACTORY);
+			var dataInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_DATA);
+			var stylesInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STYLES);
+			var stateInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STATE);
+			var selectionInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_SELECTED);
+			var tabFactoryInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_TAB_FACTORY);
 			var sizeInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_SIZE);
 
 			if(dataInvalid || tabFactoryInvalid)
@@ -1436,7 +1454,7 @@ package feathers.controls
 		 */
 		protected function commitEnabled():void
 		{
-			for each(var tab:Button in this.activeTabs)
+			for each(var tab:ToggleButton in this.activeTabs)
 			{
 				tab.isEnabled = this._isEnabled;
 			}
@@ -1447,15 +1465,12 @@ package feathers.controls
 		 */
 		protected function refreshTabStyles():void
 		{
-			for each(var tab:Button in this.activeTabs)
+			for(var propertyName:String in this._tabProperties)
 			{
-				for(var propertyName:String in this._tabProperties)
+				var propertyValue:Object = this._tabProperties[propertyName];
+				for each(var tab:ToggleButton in this.activeTabs)
 				{
-					var propertyValue:Object = this._tabProperties[propertyName];
-					if(tab.hasOwnProperty(propertyName))
-					{
-						tab[propertyName] = propertyValue;
-					}
+					tab[propertyName] = propertyValue;
 				}
 			}
 		}
@@ -1514,7 +1529,7 @@ package feathers.controls
 		/**
 		 * @private
 		 */
-		protected function defaultTabInitializer(tab:Button, item:Object):void
+		protected function defaultTabInitializer(tab:ToggleButton, item:Object):void
 		{
 			if(item is Object)
 			{
@@ -1550,7 +1565,7 @@ package feathers.controls
 			this._ignoreSelectionChanges = true;
 			var oldSelectedIndex:int = this.toggleGroup.selectedIndex;
 			this.toggleGroup.removeAllItems();
-			var temp:Vector.<Button> = this.inactiveTabs;
+			var temp:Vector.<ToggleButton> = this.inactiveTabs;
 			this.inactiveTabs = this.activeTabs;
 			this.activeTabs = temp;
 			this.activeTabs.length = 0;
@@ -1578,14 +1593,14 @@ package feathers.controls
 			this.activeLastTab = null;
 
 			var pushIndex:int = 0;
-			const itemCount:int = this._dataProvider ? this._dataProvider.length : 0;
-			const lastItemIndex:int = itemCount - 1;
+			var itemCount:int = this._dataProvider ? this._dataProvider.length : 0;
+			var lastItemIndex:int = itemCount - 1;
 			for(var i:int = 0; i < itemCount; i++)
 			{
 				var item:Object = this._dataProvider.getItemAt(i);
 				if(i == 0)
 				{
-					var tab:Button = this.activeFirstTab = this.createFirstTab(item);
+					var tab:ToggleButton = this.activeFirstTab = this.createFirstTab(item);
 				}
 				else if(i == lastItemIndex)
 				{
@@ -1625,10 +1640,10 @@ package feathers.controls
 		 */
 		protected function clearInactiveTabs():void
 		{
-			const itemCount:int = this.inactiveTabs.length;
+			var itemCount:int = this.inactiveTabs.length;
 			for(var i:int = 0; i < itemCount; i++)
 			{
-				var tab:Button = this.inactiveTabs.shift();
+				var tab:ToggleButton = this.inactiveTabs.shift();
 				this.destroyTab(tab);
 			}
 
@@ -1648,17 +1663,17 @@ package feathers.controls
 		/**
 		 * @private
 		 */
-		protected function createFirstTab(item:Object):Button
+		protected function createFirstTab(item:Object):ToggleButton
 		{
 			if(this.inactiveFirstTab)
 			{
-				var tab:Button = this.inactiveFirstTab;
+				var tab:ToggleButton = this.inactiveFirstTab;
 				this.inactiveFirstTab = null;
 			}
 			else
 			{
-				const factory:Function = this._firstTabFactory != null ? this._firstTabFactory : this._tabFactory;
-				tab = Button(factory());
+				var factory:Function = this._firstTabFactory != null ? this._firstTabFactory : this._tabFactory;
+				tab = ToggleButton(factory());
 				if(this._customFirstTabName)
 				{
 					tab.styleNameList.add(this._customFirstTabName);
@@ -1681,17 +1696,17 @@ package feathers.controls
 		/**
 		 * @private
 		 */
-		protected function createLastTab(item:Object):Button
+		protected function createLastTab(item:Object):ToggleButton
 		{
 			if(this.inactiveLastTab)
 			{
-				var tab:Button = this.inactiveLastTab;
+				var tab:ToggleButton = this.inactiveLastTab;
 				this.inactiveLastTab = null;
 			}
 			else
 			{
-				const factory:Function = this._lastTabFactory != null ? this._lastTabFactory : this._tabFactory;
-				tab = Button(factory());
+				var factory:Function = this._lastTabFactory != null ? this._lastTabFactory : this._tabFactory;
+				tab = ToggleButton(factory());
 				if(this._customLastTabName)
 				{
 					tab.styleNameList.add(this._customLastTabName);
@@ -1714,11 +1729,11 @@ package feathers.controls
 		/**
 		 * @private
 		 */
-		protected function createTab(item:Object):Button
+		protected function createTab(item:Object):ToggleButton
 		{
 			if(this.inactiveTabs.length == 0)
 			{
-				var tab:Button = this._tabFactory();
+				var tab:ToggleButton = this._tabFactory();
 				if(this._customTabName)
 				{
 					tab.styleNameList.add(this._customTabName);
@@ -1741,7 +1756,7 @@ package feathers.controls
 		/**
 		 * @private
 		 */
-		protected function destroyTab(tab:Button):void
+		protected function destroyTab(tab:ToggleButton):void
 		{
 			this.toggleGroup.removeItem(tab);
 			this.removeChild(tab, true);

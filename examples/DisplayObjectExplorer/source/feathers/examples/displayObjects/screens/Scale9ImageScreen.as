@@ -4,6 +4,8 @@ package feathers.examples.displayObjects.screens
 	import feathers.controls.Header;
 	import feathers.controls.Screen;
 	import feathers.display.Scale9Image;
+	import feathers.examples.displayObjects.themes.DisplayObjectExplorerTheme;
+	import feathers.skins.IStyleProvider;
 	import feathers.textures.Scale9Textures;
 
 	import flash.geom.Rectangle;
@@ -17,6 +19,8 @@ package feathers.examples.displayObjects.screens
 	{
 		[Embed(source="/../assets/images/scale9.png")]
 		private static const SCALE_9_TEXTURE:Class;
+
+		public static var globalStyleProvider:IStyleProvider;
 
 		public function Scale9ImageScreen()
 		{
@@ -38,26 +42,60 @@ package feathers.examples.displayObjects.screens
 		private var _rightTouchPointID:int = -1;
 		private var _bottomTouchPointID:int = -1;
 
+		private var _texture:Texture;
+
+		private var _padding:Number = 0;
+
+		public function get padding():Number
+		{
+			return this._padding;
+		}
+
+		public function set padding(value:Number):void
+		{
+			if(this._padding == value)
+			{
+				return;
+			}
+			this._padding = value;
+			this.invalidate(INVALIDATION_FLAG_LAYOUT);
+		}
+
+		override protected function get defaultStyleProvider():IStyleProvider
+		{
+			return Scale9ImageScreen.globalStyleProvider;
+		}
+
+		override public function dispose():void
+		{
+			if(this._texture)
+			{
+				this._texture.dispose();
+				this._texture = null;
+			}
+			super.dispose();
+		}
+
 		override protected function initialize():void
 		{
 			this._header = new Header();
 			this._header.title = "Scale 9 Image";
 			this.addChild(this._header);
 
-			const texture:Texture = Texture.fromBitmap(new SCALE_9_TEXTURE(), false);
-			const textures:Scale9Textures = new Scale9Textures(texture, new Rectangle(20, 20, 20, 20));
-			this._image = new Scale9Image(textures, this.dpiScale);
+			this._texture = Texture.fromEmbeddedAsset(SCALE_9_TEXTURE, false);
+			var textures:Scale9Textures = new Scale9Textures(this._texture, new Rectangle(20, 20, 20, 20));
+			this._image = new Scale9Image(textures);
 			this._minDisplayObjectWidth = 40;
 			this._minDisplayObjectHeight = 40;
 			this.addChild(this._image);
 
 			this._rightButton = new Button();
-			this._rightButton.styleNameList.add("right-grip");
+			this._rightButton.styleNameList.add(DisplayObjectExplorerTheme.THEME_NAME_RIGHT_GRIP);
 			this._rightButton.addEventListener(TouchEvent.TOUCH, rightButton_touchHandler);
 			this.addChild(this._rightButton);
 
 			this._bottomButton = new Button();
-			this._bottomButton.styleNameList.add("bottom-grip");
+			this._bottomButton.styleNameList.add(DisplayObjectExplorerTheme.THEME_NAME_BOTTOM_GRIP);
 			this._bottomButton.addEventListener(TouchEvent.TOUCH, bottomButton_touchHandler);
 			this.addChild(this._bottomButton);
 		}
@@ -67,14 +105,14 @@ package feathers.examples.displayObjects.screens
 			this._header.width = this.actualWidth;
 			this._header.validate();
 
-			this._image.x = 30 * this.dpiScale;
-			this._image.y = this._header.height + 30 * this.dpiScale;
+			this._image.x = this._padding;
+			this._image.y = this._header.height + this._padding;
 
 			this._rightButton.validate();
 			this._bottomButton.validate();
 
 			this._maxDisplayObjectWidth = this.actualWidth - this._rightButton.width - this._image.x;
-			this._maxDisplayObjectHeight = this.actualHeight - this._bottomButton.height - this._image.y;;
+			this._maxDisplayObjectHeight = this.actualHeight - this._bottomButton.height - this._image.y;
 
 			this._image.width = Math.max(this._minDisplayObjectWidth, Math.min(this._maxDisplayObjectWidth, this._image.width));
 			this._image.height = Math.max(this._minDisplayObjectHeight, Math.min(this._maxDisplayObjectHeight, this._image.height));
@@ -93,7 +131,7 @@ package feathers.examples.displayObjects.screens
 
 		private function rightButton_touchHandler(event:TouchEvent):void
 		{
-			const touch:Touch = event.getTouch(this._rightButton);
+			var touch:Touch = event.getTouch(this._rightButton);
 			if(!touch || (this._rightTouchPointID >= 0 && touch.id != this._rightTouchPointID))
 			{
 				return;
@@ -118,7 +156,7 @@ package feathers.examples.displayObjects.screens
 
 		private function bottomButton_touchHandler(event:TouchEvent):void
 		{
-			const touch:Touch = event.getTouch(this._bottomButton);
+			var touch:Touch = event.getTouch(this._bottomButton);
 			if(!touch || (this._bottomTouchPointID >= 0 && touch.id != this._bottomTouchPointID))
 			{
 				return;

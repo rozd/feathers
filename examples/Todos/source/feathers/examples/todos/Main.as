@@ -6,11 +6,13 @@ package feathers.examples.todos
 	import feathers.controls.PanelScreen;
 	import feathers.controls.ScrollContainer;
 	import feathers.controls.TextInput;
+	import feathers.controls.ToggleButton;
 	import feathers.data.ListCollection;
 	import feathers.events.FeathersEventType;
 	import feathers.examples.todos.controls.TodoItemRenderer;
 	import feathers.layout.AnchorLayout;
 	import feathers.layout.AnchorLayoutData;
+	import feathers.themes.MetalWorksMobileTheme;
 
 	import starling.display.DisplayObject;
 	import starling.events.Event;
@@ -21,17 +23,16 @@ package feathers.examples.todos
 		{
 			this.addEventListener(Event.ADDED_TO_STAGE, addedToStageHandler);
 			this.addEventListener(Event.REMOVED_FROM_STAGE, removedFromStageHandler);
-			this.addEventListener(FeathersEventType.INITIALIZE, initializeHandler);
 		}
 
 		private var _input:TextInput;
 		private var _list:List;
-		private var _editButton:Button;
+		private var _editButton:ToggleButton;
 		private var _toolbar:ScrollContainer;
 
 		private function customHeaderFactory():Header
 		{
-			const header:Header = new Header();
+			var header:Header = new Header();
 			header.title = "TODOS";
 			header.titleAlign = Header.TITLE_ALIGN_PREFER_LEFT;
 
@@ -69,8 +70,7 @@ package feathers.examples.todos
 
 			if(!this._editButton)
 			{
-				this._editButton = new Button();
-				this._editButton.isToggle = true;
+				this._editButton = new ToggleButton();
 				this._editButton.label = "Edit";
 				this._editButton.addEventListener(Event.CHANGE, editButton_changeHandler);
 			}
@@ -79,9 +79,12 @@ package feathers.examples.todos
 			return this._toolbar;
 		}
 
-		private function initializeHandler():void
+		override protected function initialize():void
 		{
-			new TodosTheme();
+			//never forget to call super.initialize()
+			super.initialize();
+
+			new MetalWorksMobileTheme();
 
 			this.width = this.stage.stageWidth;
 			this.height = this.stage.stageHeight;
@@ -96,7 +99,7 @@ package feathers.examples.todos
 			this._list.dataProvider = new ListCollection();
 			this._list.itemRendererType = TodoItemRenderer;
 			this._list.itemRendererProperties.labelField = "description";
-			const listLayoutData:AnchorLayoutData = new AnchorLayoutData(0, 0, 0, 0);
+			var listLayoutData:AnchorLayoutData = new AnchorLayoutData(0, 0, 0, 0);
 			listLayoutData.topAnchorDisplayObject = this._input;
 			this._list.layoutData = listLayoutData;
 			this.addChild(this._list);
@@ -125,7 +128,7 @@ package feathers.examples.todos
 
 		private function editButton_changeHandler(event:Event):void
 		{
-			const isEditing:Boolean = this._editButton.isSelected;
+			var isEditing:Boolean = this._editButton.isSelected;
 			this._list.itemRendererProperties.isEditable = isEditing;
 			this._input.visible = !isEditing;
 		}

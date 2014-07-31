@@ -33,7 +33,7 @@ package feathers.examples.youtube.screens
 
 		public function ListVideosScreen()
 		{
-			this.addEventListener(FeathersEventType.INITIALIZE, initializeHandler);
+			super();
 			this.addEventListener(starling.events.Event.REMOVED_FROM_STAGE, removedFromStageHandler);
 		}
 
@@ -63,8 +63,11 @@ package feathers.examples.youtube.screens
 		private var _loader:URLLoader;
 		private var _savedLoaderData:*;
 
-		protected function initializeHandler(event:starling.events.Event):void
+		override protected function initialize():void
 		{
+			//never forget to call super.initialize()
+			super.initialize();
+
 			this.layout = new AnchorLayout();
 
 			this._list = new List();
@@ -102,7 +105,7 @@ package feathers.examples.youtube.screens
 
 		override protected function draw():void
 		{
-			const dataInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_DATA);
+			var dataInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_DATA);
 			if(dataInvalid)
 			{
 				this._list.dataProvider = null;
@@ -149,12 +152,12 @@ package feathers.examples.youtube.screens
 		{
 			this._message.visible = false;
 
-			const atom:Namespace = feed.namespace();
-			const media:Namespace = feed.namespace("media");
+			var atom:Namespace = feed.namespace();
+			var media:Namespace = feed.namespace("media");
 
-			const items:Vector.<VideoDetails> = new <VideoDetails>[];
-			const entries:XMLList = feed.atom::entry;
-			const entryCount:int = entries.length();
+			var items:Vector.<VideoDetails> = new <VideoDetails>[];
+			var entries:XMLList = feed.atom::entry;
+			var entryCount:int = entries.length();
 			for(var i:int = 0; i < entryCount; i++)
 			{
 				var entry:XML = entries[i];
@@ -165,7 +168,7 @@ package feathers.examples.youtube.screens
 				item.description = entry.media::group[0].media::description[0].toString();
 				items.push(item);
 			}
-			const collection:ListCollection = new ListCollection(items);
+			var collection:ListCollection = new ListCollection(items);
 			this._model.cachedLists[this._model.selectedList.url] = collection;
 			this._list.dataProvider = collection;
 		}
@@ -191,7 +194,7 @@ package feathers.examples.youtube.screens
 
 		private function loader_completeHandler(event:flash.events.Event):void
 		{
-			const loaderData:* = this._loader.data;
+			var loaderData:* = this._loader.data;
 			this.cleanUpLoader();
 			if(this._isTransitioning)
 			{

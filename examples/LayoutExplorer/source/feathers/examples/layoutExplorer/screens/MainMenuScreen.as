@@ -36,13 +36,15 @@ package feathers.examples.layoutExplorer.screens
 		public function MainMenuScreen()
 		{
 			super();
-			this.addEventListener(FeathersEventType.INITIALIZE, initializeHandler);
 		}
 
 		private var _list:List;
 
-		protected function initializeHandler(event:Event):void
+		override protected function initialize():void
 		{
+			//never forget to call super.initialize()
+			super.initialize();
+
 			var isTablet:Boolean = DeviceCapabilities.isTablet(Starling.current.nativeStage);
 
 			this.layout = new AnchorLayout();
@@ -92,7 +94,7 @@ package feathers.examples.layoutExplorer.screens
 
 		private function list_changeHandler(event:Event):void
 		{
-			const eventType:String = this._list.selectedItem.event as String;
+			var eventType:String = this._list.selectedItem.event as String;
 			this.dispatchEventWith(eventType);
 		}
 	}

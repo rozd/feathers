@@ -10,18 +10,23 @@ package feathers.controls
 	import feathers.core.FeathersControl;
 	import feathers.core.IFeathersControl;
 	import feathers.core.IFocusDisplayObject;
+	import feathers.core.IMultilineTextEditor;
+	import feathers.core.ITextBaselineControl;
 	import feathers.core.ITextEditor;
 	import feathers.core.ITextRenderer;
 	import feathers.core.IValidating;
 	import feathers.core.PropertyProxy;
 	import feathers.events.FeathersEventType;
+	import feathers.skins.IStyleProvider;
 	import feathers.skins.StateValueSelector;
 
 	import flash.geom.Point;
+	import flash.geom.Rectangle;
 	import flash.ui.Mouse;
 	import flash.ui.MouseCursor;
 
 	import starling.display.DisplayObject;
+	import starling.display.DisplayObjectContainer;
 	import starling.events.Event;
 	import starling.events.Touch;
 	import starling.events.TouchEvent;
@@ -189,12 +194,17 @@ package feathers.controls
 	 * @see http://wiki.starling-framework.org/feathers/text-editors
 	 * @see feathers.core.ITextEditor
 	 */
-	public class TextInput extends FeathersControl implements IFocusDisplayObject
+	public class TextInput extends FeathersControl implements IFocusDisplayObject, ITextBaselineControl
 	{
 		/**
 		 * @private
 		 */
 		private static const HELPER_POINT:Point = new Point();
+
+		/**
+		 * @private
+		 */
+		protected static const INVALIDATION_FLAG_PROMPT_FACTORY:String = "promptFactory";
 
 		/**
 		 * The <code>TextInput</code> is enabled and does not have focus.
@@ -218,7 +228,7 @@ package feathers.controls
 		 * the default text input skin.
 		 *
 		 * <p>An alternate name should always be added to a component's
-		 * <code>nameList</code> before the component is added to the stage for
+		 * <code>styleNameList</code> before the component is added to the stage for
 		 * the first time. If it is added later, it will be ignored.</p>
 		 *
 		 * <p>In the following example, the searc style is applied to a text
@@ -229,21 +239,57 @@ package feathers.controls
 		 * input.styleNameList.add( TextInput.ALTERNATE_NAME_SEARCH_TEXT_INPUT );
 		 * this.addChild( input );</listing>
 		 *
-		 * @see feathers.core.IFeathersControl#nameList
+		 * @see feathers.core.FeathersControl#styleNameList
 		 */
 		public static const ALTERNATE_NAME_SEARCH_TEXT_INPUT:String = "feathers-search-text-input";
 
 		/**
-		 * @private
+		 * The text editor, icon, and prompt will be aligned vertically to the
+		 * top edge of the text input.
+		 *
+		 * @see #verticalAlign
 		 */
-		protected static const INVALIDATION_FLAG_PROMPT_FACTORY:String = "promptFactory";
+		public static const VERTICAL_ALIGN_TOP:String = "top";
+
+		/**
+		 * The text editor, icon, and prompt will be aligned vertically to the
+		 * middle of the text input.
+		 *
+		 * @see #verticalAlign
+		 */
+		public static const VERTICAL_ALIGN_MIDDLE:String = "middle";
+
+		/**
+		 * The text editor, icon, and prompt will be aligned vertically to the
+		 * bottom edge of the text input.
+		 *
+		 * @see #verticalAlign
+		 */
+		public static const VERTICAL_ALIGN_BOTTOM:String = "bottom";
+
+		/**
+		 * The text editor will fill the full height of the text input (minus
+		 * top and bottom padding).
+		 *
+		 * @see #verticalAlign
+		 */
+		public static const VERTICAL_ALIGN_JUSTIFY:String = "justify";
+
+		/**
+		 * The default <code>IStyleProvider</code> for all <code>TextInput</code>
+		 * components.
+		 *
+		 * @default null
+		 * @see feathers.core.FeathersControl#styleProvider
+		 */
+		public static var globalStyleProvider:IStyleProvider;
 
 		/**
 		 * Constructor.
 		 */
 		public function TextInput()
 		{
-			this.isQuickHitAreaEnabled = true;
+			super();
 			this.addEventListener(TouchEvent.TOUCH, textInput_touchHandler);
 			this.addEventListener(Event.REMOVED_FROM_STAGE, textInput_removedFromStageHandler);
 		}
@@ -291,6 +337,14 @@ package feathers.controls
 		 * @private
 		 */
 		protected var _touchPointID:int = -1;
+
+		/**
+		 * @private
+		 */
+		override protected function get defaultStyleProvider():IStyleProvider
+		{
+			return TextInput.globalStyleProvider;
+		}
 
 		/**
 		 * @private
@@ -426,6 +480,18 @@ package feathers.controls
 		}
 
 		/**
+		 * The baseline measurement of the text, in pixels.
+		 */
+		public function get baseline():Number
+		{
+			if(!this.textEditor)
+			{
+				return 0;
+			}
+			return this.textEditor.y + this.textEditor.baseline;
+		}
+
+		/**
 		 * @private
 		 */
 		protected var _prompt:String;
@@ -541,7 +607,7 @@ package feathers.controls
 		 * restricted:</p>
 		 *
 		 * <listing version="3.0">
-		 * input.restrict = "0-9;</listing>
+		 * input.restrict = "0-9";</listing>
 		 *
 		 * @default null
 		 */
@@ -795,7 +861,7 @@ package feathers.controls
 			}
 			if(!(value is PropertyProxy))
 			{
-				const newValue:PropertyProxy = new PropertyProxy();
+				var newValue:PropertyProxy = new PropertyProxy();
 				for(var propertyName:String in value)
 				{
 					newValue[propertyName] = value[propertyName];
@@ -1367,6 +1433,46 @@ package feathers.controls
 
 		/**
 		 * @private
+		 */
+		protected var _verticalAlign:String = VERTICAL_ALIGN_MIDDLE;
+
+		[Inspectable(type="String",enumeration="top,middle,bottom,justify")]
+		/**
+		 * The location where the text editor is aligned vertically (on
+		 * the y-axis).
+		 *
+		 * <p>The following example aligns the text editor to the top:</p>
+		 *
+		 * <listing version="3.0">
+		 * input.verticalAlign = TextInput.VERTICAL_ALIGN_TOP;</listing>
+		 *
+		 * @default TextInput.VERTICAL_ALIGN_MIDDLE
+		 *
+		 * @see #VERTICAL_ALIGN_TOP
+		 * @see #VERTICAL_ALIGN_MIDDLE
+		 * @see #VERTICAL_ALIGN_BOTTOM
+		 * @see #VERTICAL_ALIGN_JUSTIFY
+		 */
+		public function get verticalAlign():String
+		{
+			return _verticalAlign;
+		}
+
+		/**
+		 * @private
+		 */
+		public function set verticalAlign(value:String):void
+		{
+			if(this._verticalAlign == value)
+			{
+				return;
+			}
+			this._verticalAlign = value;
+			this.invalidate(INVALIDATION_FLAG_STYLES);
+		}
+
+		/**
+		 * @private
 		 * Flag indicating that the text editor should get focus after it is
 		 * created.
 		 */
@@ -1375,7 +1481,7 @@ package feathers.controls
 		/**
 		 * @private
 		 */
-		protected var _pendingSelectionStartIndex:int = -1;
+		protected var _pendingSelectionBeginIndex:int = -1;
 
 		/**
 		 * @private
@@ -1444,7 +1550,7 @@ package feathers.controls
 			}
 			if(!(value is PropertyProxy))
 			{
-				const newValue:PropertyProxy = new PropertyProxy();
+				var newValue:PropertyProxy = new PropertyProxy();
 				for(var propertyName:String in value)
 				{
 					newValue[propertyName] = value[propertyName];
@@ -1464,6 +1570,38 @@ package feathers.controls
 		}
 
 		/**
+		 * @copy feathers.core.ITextEditor#selectionBeginIndex
+		 */
+		public function get selectionBeginIndex():int
+		{
+			if(this._pendingSelectionBeginIndex >= 0)
+			{
+				return this._pendingSelectionBeginIndex;
+			}
+			if(this.textEditor)
+			{
+				return this.textEditor.selectionBeginIndex;
+			}
+			return 0;
+		}
+
+		/**
+		 * @copy feathers.core.ITextEditor#selectionEndIndex
+		 */
+		public function get selectionEndIndex():int
+		{
+			if(this._pendingSelectionEndIndex >= 0)
+			{
+				return this._pendingSelectionEndIndex;
+			}
+			if(this.textEditor)
+			{
+				return this.textEditor.selectionEndIndex;
+			}
+			return 0;
+		}
+
+		/**
 		 * @private
 		 */
 		override public function set visible(value:Boolean):void
@@ -1477,6 +1615,23 @@ package feathers.controls
 				}
 			}
 			super.visible = value;
+		}
+
+		/**
+		 * @private
+		 */
+		override public function hitTest(localPoint:Point, forTouch:Boolean = false):DisplayObject
+		{
+			if(forTouch && (!this.visible || !this.touchable))
+			{
+				return null;
+			}
+			var clipRect:Rectangle = this.clipRect;
+			if(clipRect && !clipRect.containsPoint(localPoint))
+			{
+				return null;
+			}
+			return this._hitArea.containsPoint(localPoint) ? DisplayObject(this.textEditor) : null;
 		}
 
 		/**
@@ -1497,7 +1652,10 @@ package feathers.controls
 		 */
 		public function setFocus():void
 		{
-			if(this._textEditorHasFocus || !this.visible)
+			//if the text editor has focus, no need to set focus
+			//if this is invisible, it wouldn't make sense to set focus
+			//if there's a touch point ID, we'll be setting focus on our own
+			if(this._textEditorHasFocus || !this.visible || this._touchPointID >= 0)
 			{
 				return;
 			}
@@ -1531,15 +1689,15 @@ package feathers.controls
 		 * or the end index is <code>-1</code>, the text insertion position is
 		 * changed and nothing is selected.
 		 */
-		public function selectRange(startIndex:int, endIndex:int = -1):void
+		public function selectRange(beginIndex:int, endIndex:int = -1):void
 		{
 			if(endIndex < 0)
 			{
-				endIndex = startIndex;
+				endIndex = beginIndex;
 			}
-			if(startIndex < 0)
+			if(beginIndex < 0)
 			{
-				throw new RangeError("Expected start index >= 0. Received " + startIndex + ".");
+				throw new RangeError("Expected start index >= 0. Received " + beginIndex + ".");
 			}
 			if(endIndex > this._text.length)
 			{
@@ -1550,13 +1708,13 @@ package feathers.controls
 			//the selection
 			if(this.textEditor && (this._isValidating || !this.isInvalid()))
 			{
-				this._pendingSelectionStartIndex = -1;
+				this._pendingSelectionBeginIndex = -1;
 				this._pendingSelectionEndIndex = -1;
-				this.textEditor.selectRange(startIndex, endIndex);
+				this.textEditor.selectRange(beginIndex, endIndex);
 			}
 			else
 			{
-				this._pendingSelectionStartIndex = startIndex;
+				this._pendingSelectionBeginIndex = beginIndex;
 				this._pendingSelectionEndIndex = endIndex;
 				this.invalidate(INVALIDATION_FLAG_SELECTED);
 			}
@@ -1567,14 +1725,14 @@ package feathers.controls
 		 */
 		override protected function draw():void
 		{
-			const stateInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STATE);
-			const stylesInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STYLES);
-			const dataInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_DATA);
-			const skinInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_SKIN);
+			var stateInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STATE);
+			var stylesInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STYLES);
+			var dataInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_DATA);
+			var skinInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_SKIN);
 			var sizeInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_SIZE);
-			const textEditorInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_TEXT_EDITOR);
-			const promptFactoryInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_PROMPT_FACTORY);
-			const focusInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_FOCUS);
+			var textEditorInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_TEXT_EDITOR);
+			var promptFactoryInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_PROMPT_FACTORY);
+			var focusInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_FOCUS);
 
 			if(textEditorInvalid)
 			{
@@ -1598,7 +1756,7 @@ package feathers.controls
 
 			if(textEditorInvalid || dataInvalid)
 			{
-				const oldIgnoreTextChanges:Boolean = this._ignoreTextChanges;
+				var oldIgnoreTextChanges:Boolean = this._ignoreTextChanges;
 				this._ignoreTextChanges = true;
 				this.textEditor.text = this._text;
 				this._ignoreTextChanges = oldIgnoreTextChanges;
@@ -1663,8 +1821,8 @@ package feathers.controls
 		 */
 		protected function autoSizeIfNeeded():Boolean
 		{
-			const needsWidth:Boolean = isNaN(this.explicitWidth);
-			const needsHeight:Boolean = isNaN(this.explicitHeight);
+			var needsWidth:Boolean = this.explicitWidth != this.explicitWidth; //isNaN
+			var needsHeight:Boolean = this.explicitHeight != this.explicitHeight; //isNaN
 			if(!needsWidth && !needsHeight)
 			{
 				return false;
@@ -1674,7 +1832,9 @@ package feathers.controls
 			var typicalTextHeight:Number = 0;
 			if(this._typicalText)
 			{
-				const oldIgnoreTextChanges:Boolean = this._ignoreTextChanges;
+				var oldTextEditorWidth:Number = this.textEditor.width;
+				var oldTextEditorHeight:Number = this.textEditor.height;
+				var oldIgnoreTextChanges:Boolean = this._ignoreTextChanges;
 				this._ignoreTextChanges = true;
 				this.textEditor.setSize(NaN, NaN);
 				this.textEditor.text = this._typicalText;
@@ -1697,16 +1857,25 @@ package feathers.controls
 			if(needsWidth)
 			{
 				newWidth = Math.max(this._originalSkinWidth, typicalTextWidth + this._paddingLeft + this._paddingRight);
+				if(newWidth != newWidth) //isNaN
+				{
+					newWidth = 0;
+				}
 			}
 			if(needsHeight)
 			{
 				newHeight = Math.max(this._originalSkinHeight, typicalTextHeight + this._paddingTop + this._paddingBottom);
+				if(newHeight != newHeight) //isNaN
+				{
+					newHeight = 0;
+				}
 			}
 
-			if(this._typicalText)
+			var isMultiline:Boolean = this.textEditor is IMultilineTextEditor && IMultilineTextEditor(this.textEditor).multiline;
+			if(this._typicalText && (this._verticalAlign == VERTICAL_ALIGN_JUSTIFY || isMultiline))
 			{
-				this.textEditor.width = this.actualWidth - this._paddingLeft - this._paddingRight;
-				this.textEditor.height = this.actualHeight - this._paddingTop - this._paddingBottom;
+				this.textEditor.width = oldTextEditorWidth;
+				this.textEditor.height = oldTextEditorHeight;
 			}
 
 			return this.setSizeInternal(newWidth, newHeight, false);
@@ -1734,7 +1903,7 @@ package feathers.controls
 				this.textEditor = null;
 			}
 
-			const factory:Function = this._textEditorFactory != null ? this._textEditorFactory : FeathersControl.defaultTextEditorFactory;
+			var factory:Function = this._textEditorFactory != null ? this._textEditorFactory : FeathersControl.defaultTextEditorFactory;
 			this.textEditor = ITextEditor(factory());
 			this.textEditor.addEventListener(Event.CHANGE, textEditor_changeHandler);
 			this.textEditor.addEventListener(FeathersEventType.ENTER, textEditor_enterHandler);
@@ -1754,7 +1923,7 @@ package feathers.controls
 				this.promptTextRenderer = null;
 			}
 
-			const factory:Function = this._promptFactory != null ? this._promptFactory : FeathersControl.defaultTextRendererFactory;
+			var factory:Function = this._promptFactory != null ? this._promptFactory : FeathersControl.defaultTextRendererFactory;
 			this.promptTextRenderer = ITextRenderer(factory());
 			this.addChild(DisplayObject(this.promptTextRenderer));
 		}
@@ -1772,11 +1941,11 @@ package feathers.controls
 					this.textEditor.setFocus();
 				}
 			}
-			if(this._pendingSelectionStartIndex >= 0)
+			if(this._pendingSelectionBeginIndex >= 0)
 			{
-				var startIndex:int = this._pendingSelectionStartIndex;
+				var startIndex:int = this._pendingSelectionBeginIndex;
 				var endIndex:int = this._pendingSelectionEndIndex;
-				this._pendingSelectionStartIndex = -1;
+				this._pendingSelectionBeginIndex = -1;
 				this._pendingSelectionEndIndex = -1;
 				if(endIndex >= 0)
 				{
@@ -1799,14 +1968,10 @@ package feathers.controls
 			this.textEditor.maxChars = this._maxChars;
 			this.textEditor.restrict = this._restrict;
 			this.textEditor.isEditable = this._isEditable;
-			const displayTextEditor:DisplayObject = DisplayObject(this.textEditor);
 			for(var propertyName:String in this._textEditorProperties)
 			{
-				if(displayTextEditor.hasOwnProperty(propertyName))
-				{
-					var propertyValue:Object = this._textEditorProperties[propertyName];
-					this.textEditor[propertyName] = propertyValue;
-				}
+				var propertyValue:Object = this._textEditorProperties[propertyName];
+				this.textEditor[propertyName] = propertyValue;
 			}
 		}
 
@@ -1816,14 +1981,11 @@ package feathers.controls
 		protected function refreshPromptProperties():void
 		{
 			this.promptTextRenderer.text = this._prompt;
-			const displayPrompt:DisplayObject = DisplayObject(this.promptTextRenderer);
+			var displayPrompt:DisplayObject = DisplayObject(this.promptTextRenderer);
 			for(var propertyName:String in this._promptProperties)
 			{
-				if(displayPrompt.hasOwnProperty(propertyName))
-				{
-					var propertyValue:Object = this._promptProperties[propertyName];
-					this.promptTextRenderer[propertyName] = propertyValue;
-				}
+				var propertyValue:Object = this._promptProperties[propertyName];
+				this.promptTextRenderer[propertyName] = propertyValue;
 			}
 		}
 
@@ -1834,7 +1996,7 @@ package feathers.controls
 		 */
 		protected function refreshBackgroundSkin():void
 		{
-			const oldSkin:DisplayObject = this.currentBackground;
+			var oldSkin:DisplayObject = this.currentBackground;
 			if(this._stateToSkinFunction != null)
 			{
 				this.currentBackground = DisplayObject(this._stateToSkinFunction(this, this._currentState, oldSkin));
@@ -1854,7 +2016,9 @@ package feathers.controls
 					this.addChildAt(this.currentBackground, 0);
 				}
 			}
-			if(this.currentBackground && (isNaN(this._originalSkinWidth) || isNaN(this._originalSkinHeight)))
+			if(this.currentBackground &&
+				(this._originalSkinWidth != this._originalSkinWidth || //isNaN
+					this._originalSkinHeight != this._originalSkinHeight)) //isNaN
 			{
 				if(this.currentBackground is IValidating)
 				{
@@ -1872,7 +2036,7 @@ package feathers.controls
 		 */
 		protected function refreshIcon():void
 		{
-			const oldIcon:DisplayObject = this.currentIcon;
+			var oldIcon:DisplayObject = this.currentIcon;
 			if(this._stateToIconFunction != null)
 			{
 				this.currentIcon = DisplayObject(this._stateToIconFunction(this, this._currentState, oldIcon));
@@ -1923,7 +2087,6 @@ package feathers.controls
 			if(this.currentIcon)
 			{
 				this.currentIcon.x = this._paddingLeft;
-				this.currentIcon.y = this._paddingTop + (this.actualHeight - this._paddingTop - this._paddingBottom - this.currentIcon.height) / 2;
 				this.textEditor.x = this.currentIcon.x + this.currentIcon.width + this._gap;
 				this.promptTextRenderer.x = this.currentIcon.x + this.currentIcon.width + this._gap;
 			}
@@ -1932,13 +2095,92 @@ package feathers.controls
 				this.textEditor.x = this._paddingLeft;
 				this.promptTextRenderer.x = this._paddingLeft;
 			}
-			this.textEditor.y = this._paddingTop;
 			this.textEditor.width = this.actualWidth - this._paddingRight - this.textEditor.x;
-			this.textEditor.height = this.actualHeight - this._paddingTop - this._paddingBottom;
-
-			this.promptTextRenderer.y = this._paddingTop;
 			this.promptTextRenderer.width = this.actualWidth - this._paddingRight - this.promptTextRenderer.x;
-			this.promptTextRenderer.height = this.actualHeight - this._paddingTop - this._paddingBottom;
+
+			var isMultiline:Boolean = this.textEditor is IMultilineTextEditor && IMultilineTextEditor(this.textEditor).multiline;
+			if(isMultiline || this._verticalAlign == VERTICAL_ALIGN_JUSTIFY)
+			{
+				//multiline is treated the same as justify
+				this.textEditor.height = this.actualHeight - this._paddingTop - this._paddingBottom;
+			}
+			else
+			{
+				//clear the height and auto-size instead
+				this.textEditor.height = NaN;
+			}
+			this.textEditor.validate();
+			this.promptTextRenderer.validate();
+
+			var biggerHeight:Number = this.textEditor.height;
+			var biggerBaseline:Number = this.textEditor.baseline;
+			var promptBaseline:Number = this.promptTextRenderer.baseline;
+			var promptHeight:Number = this.promptTextRenderer.height;
+			if(promptBaseline > biggerBaseline)
+			{
+				biggerBaseline = promptBaseline;
+			}
+			if(promptHeight > biggerHeight)
+			{
+				biggerHeight = promptHeight;
+			}
+
+			if(isMultiline)
+			{
+				this.textEditor.y = this._paddingTop + biggerBaseline - this.textEditor.baseline;
+				this.promptTextRenderer.y = this._paddingTop + biggerBaseline - this.promptTextRenderer.baseline;
+				this.promptTextRenderer.height = this.actualHeight - this.promptTextRenderer.y - this._paddingBottom;
+				if(this.currentIcon)
+				{
+					this.currentIcon.y = this._paddingTop;
+				}
+			}
+			else
+			{
+				switch(this._verticalAlign)
+				{
+					case VERTICAL_ALIGN_JUSTIFY:
+					{
+						this.textEditor.y = this._paddingTop + biggerBaseline - this.textEditor.baseline;
+						this.promptTextRenderer.y = this._paddingTop + biggerBaseline - this.promptTextRenderer.baseline;
+						this.promptTextRenderer.height = this.actualHeight - this.promptTextRenderer.y - this._paddingBottom;
+						if(this.currentIcon)
+						{
+							this.currentIcon.y = this._paddingTop;
+						}
+						break;
+					}
+					case VERTICAL_ALIGN_TOP:
+					{
+						this.textEditor.y = this._paddingTop + biggerBaseline - this.textEditor.baseline;
+						this.promptTextRenderer.y = this._paddingTop + biggerBaseline - this.promptTextRenderer.baseline;
+						if(this.currentIcon)
+						{
+							this.currentIcon.y = this._paddingTop;
+						}
+						break;
+					}
+					case VERTICAL_ALIGN_BOTTOM:
+					{
+						this.textEditor.y = this.actualHeight - this._paddingBottom - biggerHeight + biggerBaseline - this.textEditor.baseline;
+						this.promptTextRenderer.y = this.actualHeight - this._paddingBottom - biggerHeight + biggerBaseline - this.promptTextRenderer.baseline;
+						if(this.currentIcon)
+						{
+							this.currentIcon.y = this.actualHeight - this._paddingBottom - this.currentIcon.height;
+						}
+						break;
+					}
+					default: //middle
+					{
+						this.textEditor.y = biggerBaseline - this.textEditor.baseline + this._paddingTop + (this.actualHeight - this._paddingTop - this._paddingBottom - biggerHeight) / 2;
+						this.promptTextRenderer.y = biggerBaseline - this.promptTextRenderer.baseline + this._paddingTop + (this.actualHeight - this._paddingTop - this._paddingBottom - biggerHeight) / 2;
+						if(this.currentIcon)
+						{
+							this.currentIcon.y = this._paddingTop + (this.actualHeight - this._paddingTop - this._paddingBottom - this.currentIcon.height) / 2;
+						}
+					}
+				}
+			}
 		}
 
 		/**
@@ -1951,12 +2193,10 @@ package feathers.controls
 				return;
 			}
 			touch.getLocation(this.stage, HELPER_POINT);
-			const isInBounds:Boolean = this.contains(this.stage.hitTest(HELPER_POINT, true));
-			if(!this._textEditorHasFocus && isInBounds)
+			var isInBounds:Boolean = this.contains(this.stage.hitTest(HELPER_POINT, true));
+			if(isInBounds && !this._textEditorHasFocus)
 			{
-				this.globalToLocal(HELPER_POINT, HELPER_POINT);
-				HELPER_POINT.x -= this._paddingLeft;
-				HELPER_POINT.y -= this._paddingTop;
+				this.textEditor.globalToLocal(HELPER_POINT, HELPER_POINT);
 				this._isWaitingToSetFocus = false;
 				this.textEditor.setFocus(HELPER_POINT);
 			}
@@ -1975,6 +2215,10 @@ package feathers.controls
 		 */
 		protected function textInput_removedFromStageHandler(event:Event):void
 		{
+			if(!this._focusManager && this._textEditorHasFocus)
+			{
+				this.clearFocus();
+			}
 			this._textEditorHasFocus = false;
 			this._isWaitingToSetFocus = false;
 			this._touchPointID = -1;
@@ -2092,7 +2336,6 @@ package feathers.controls
 		 */
 		protected function textEditor_focusInHandler(event:Event):void
 		{
-			this._touchPointID = -1;
 			if(!this.visible)
 			{
 				this.textEditor.clearFocus();
@@ -2117,7 +2360,7 @@ package feathers.controls
 		{
 			this._textEditorHasFocus = false;
 			this.currentState = this._isEnabled ? STATE_ENABLED : STATE_DISABLED;
-			if(this._focusManager)
+			if(this._focusManager && this._isFocusEnabled)
 			{
 				if(this._focusManager.focus == this)
 				{

@@ -12,6 +12,7 @@ package feathers.core
 	import feathers.events.FeathersEventType;
 	import feathers.layout.ILayoutData;
 	import feathers.layout.ILayoutDisplayObject;
+	import feathers.skins.IStyleProvider;
 	import feathers.utils.display.getDisplayObjectDepthFromStage;
 
 	import flash.errors.IllegalOperationError;
@@ -98,6 +99,10 @@ package feathers.core
 	 * Base class for all UI controls. Implements invalidation and sets up some
 	 * basic template functions like <code>initialize()</code> and
 	 * <code>draw()</code>.
+	 *
+	 * <p>For a base component class that supports layouts, see <code>LayoutGroup</code>.</p>
+	 *
+	 * @see feathers.controls.LayoutGroup
 	 */
 	public class FeathersControl extends Sprite implements IFeathersControl, ILayoutDisplayObject
 	{
@@ -240,6 +245,7 @@ package feathers.core
 			{
 				throw new Error(ABSTRACT_CLASS_ERROR);
 			}
+			this._styleProvider = this.defaultStyleProvider;
 			this.addEventListener(Event.ADDED_TO_STAGE, feathersControl_addedToStageHandler);
 			this.addEventListener(Event.REMOVED_FROM_STAGE, feathersControl_removedFromStageHandler);
 			this.addEventListener(Event.FLATTEN, feathersControl_flattenHandler);
@@ -256,7 +262,9 @@ package feathers.core
 		 * selectors. In Feathers, they are a non-unique identifier that can
 		 * differentiate multiple styles of the same type of UI control. A
 		 * single control may have many style names, and many controls can share
-		 * a single style name. A <a href="">theme</a> or another
+		 * a single style name. A <a href="http://wiki.starling-framework.org/feathers/themes">theme</a>
+		 * or another skinning mechanism may use style names to provide a
+		 * variety of visual appearances for a single component class.
 		 *
 		 * <p>In general, the <code>styleName</code> property should not be set
 		 * directly on a Feathers component. You should add and remove style
@@ -265,6 +273,7 @@ package feathers.core
 		 * @default ""
 		 *
 		 * @see #styleNameList
+		 * @see http://wiki.starling-framework.org/feathers/themes
 		 * @see http://wiki.starling-framework.org/feathers/extending-themes
 		 */
 		public function get styleName():String
@@ -290,15 +299,20 @@ package feathers.core
 		 * like classes in CSS selectors. They are a non-unique identifier that
 		 * can differentiate multiple styles of the same type of UI control. A
 		 * single control may have many names, and many controls can share a
-		 * single name. Names may be added, removed, or toggled on the <code>nameList</code>.
-		 * Names cannot contain spaces.
+		 * single name. A <a href="http://wiki.starling-framework.org/feathers/themes">theme</a>
+		 * or another skinning mechanism may use style names to provide a
+		 * variety of visual appearances for a single component class.
+		 *
+		 * <p>Names may be added, removed, or toggled on the
+		 * <code>styleNameList</code>. Names cannot contain spaces.</p>
 		 *
 		 * <p>In the following example, a name is added to the name list:</p>
 		 *
 		 * <listing version="3.0">
 		 * control.styleNameList.add( "custom-component-name" );</listing>
 		 *
-		 * @see #name
+		 * @see #styleName
+		 * @see http://wiki.starling-framework.org/feathers/themes
 		 * @see http://wiki.starling-framework.org/feathers/extending-themes
 		 */
 		public function get styleNameList():TokenList
@@ -307,16 +321,74 @@ package feathers.core
 		}
 
 		/**
-		 * DEPRECATED: Replaced by the <code>styleNameList</code> property.
+		 * DEPRECATED: Replaced by the <code>styleNameList</code>
+		 * property.
 		 *
 		 * <p><strong>DEPRECATION WARNING:</strong> This property is deprecated
-		 * starting with Feathers 1.4. It will be removed in a future version of
+		 * starting with Feathers 2.0. It will be removed in a future version of
 		 * Feathers according to the standard
 		 * <a href="http://wiki.starling-framework.org/feathers/deprecation-policy">Feathers deprecation policy</a>.</p>
+		 *
+		 * @see #styleNameList
 		 */
 		public function get nameList():TokenList
 		{
 			return this._styleNameList;
+		}
+
+		/**
+		 * @private
+		 */
+		protected var _styleProvider:IStyleProvider;
+
+		/**
+		 * After the component initializes, it may be passed to a style provider
+		 * to set skin and style properties.
+		 *
+		 * @default null
+		 *
+		 * @see #styleName
+		 * @see #styleNameList
+		 * @see http://wiki.starling-framework.org/feathers/themes
+		 */
+		public function get styleProvider():IStyleProvider
+		{
+			return this._styleProvider;
+		}
+
+		/**
+		 * @private
+		 */
+		public function set styleProvider(value:IStyleProvider):void
+		{
+			if(this.isInitialized)
+			{
+				throw new IllegalOperationError("The styleProvider property cannot be changed after a component is initialized.");
+			}
+			this._styleProvider = value;
+		}
+
+		/**
+		 * When the <code>FeathersControl</code> constructor is called, the
+		 * <code>styleProvider</code> property is set to this value. May be
+		 * <code>null</code>.
+		 *
+		 * <p>Typically, a subclass of <code>FeathersControl</code> will
+		 * override this function to return its static <code>styleProvider</code>
+		 * value. For instance, <code>feathers.controls.Button</code> overrides
+		 * this function, and its implementation looks like this:</p>
+		 *
+		 * <listing version="3.0">
+		 * override protected function get defaultStyleProvider():IStyleProvider
+		 * {
+		 *     return Button.styleProvider;
+		 * }</listing>
+		 *
+		 * @see #styleProvider
+		 */
+		protected function get defaultStyleProvider():IStyleProvider
+		{
+			return null;
 		}
 
 		/**
@@ -483,7 +555,7 @@ package feathers.core
 		 * <listing version="3.0">
 		 * control.width = NaN;</listing>
 		 * 
-		 * @see feathers.core.IFeathersControl#validate()
+		 * @see feathers.core.FeathersControl#validate()
 		 */
 		override public function get width():Number
 		{
@@ -499,8 +571,8 @@ package feathers.core
 			{
 				return;
 			}
-			const valueIsNaN:Boolean = isNaN(value);
-			if(valueIsNaN && isNaN(this.explicitWidth))
+			var valueIsNaN:Boolean = value != value; //isNaN
+			if(valueIsNaN && this.explicitWidth != this.explicitWidth)
 			{
 				return;
 			}
@@ -567,7 +639,7 @@ package feathers.core
 		 * <listing version="3.0">
 		 * control.height = NaN;</listing>
 		 * 
-		 * @see feathers.core.IFeathersControl#validate()
+		 * @see feathers.core.FeathersControl#validate()
 		 */
 		override public function get height():Number
 		{
@@ -583,8 +655,8 @@ package feathers.core
 			{
 				return;
 			}
-			const valueIsNaN:Boolean = isNaN(value);
-			if(valueIsNaN && isNaN(this.explicitHeight))
+			var valueIsNaN:Boolean = value != value; //isNaN
+			if(valueIsNaN && this.explicitHeight != this.explicitHeight)
 			{
 				return;
 			}
@@ -704,7 +776,7 @@ package feathers.core
 			{
 				return;
 			}
-			if(isNaN(value))
+			if(value != value) //isNaN
 			{
 				throw new ArgumentError("minWidth cannot be NaN");
 			}
@@ -746,7 +818,7 @@ package feathers.core
 			{
 				return;
 			}
-			if(isNaN(value))
+			if(value != value) //isNaN
 			{
 				throw new ArgumentError("minHeight cannot be NaN");
 			}
@@ -788,7 +860,7 @@ package feathers.core
 			{
 				return;
 			}
-			if(isNaN(value))
+			if(value != value) //isNaN
 			{
 				throw new ArgumentError("maxWidth cannot be NaN");
 			}
@@ -830,7 +902,7 @@ package feathers.core
 			{
 				return;
 			}
-			if(isNaN(value))
+			if(value != value) //isNaN
 			{
 				throw new ArgumentError("maxHeight cannot be NaN");
 			}
@@ -1412,7 +1484,7 @@ package feathers.core
 				{
 					return null;
 				}
-				const clipRect:Rectangle = this.clipRect;
+				var clipRect:Rectangle = this.clipRect;
 				if(clipRect && !clipRect.containsPoint(localPoint))
 				{
 					return null;
@@ -1425,8 +1497,14 @@ package feathers.core
 		/**
 		 * @private
 		 */
+		protected var _isDisposed:Boolean = false;
+
+		/**
+		 * @private
+		 */
 		override public function dispose():void
 		{
+			this._isDisposed = true;
 			this._validationQueue = null;
 			super.dispose();
 		}
@@ -1448,7 +1526,7 @@ package feathers.core
 		 */
 		public function invalidate(flag:String = INVALIDATION_FLAG_ALL):void
 		{
-			const isAlreadyInvalid:Boolean = this.isInvalid();
+			var isAlreadyInvalid:Boolean = this.isInvalid();
 			var isAlreadyDelayedInvalid:Boolean = false;
 			if(this._isValidating)
 			{
@@ -1516,19 +1594,33 @@ package feathers.core
 		 * 
 		 * @see #invalidate()
 		 * @see #initialize()
-		 * @see feathers.events.FeathersEventType#INITIALIZE
+		 * @see #event:initialize feathers.events.FeathersEventType.INITIALIZE
 		 */
 		public function validate():void
 		{
-			if(!this._validationQueue || !this._isInitialized || !this.isInvalid())
+			if(this._isDisposed)
+			{
+				//disposed components have no reason to validate, but they may
+				//have been left in the queue.
+				return;
+			}
+			if(!this._isInitialized)
+			{
+				this.initializeInternal();
+			}
+			if(!this.isInvalid())
 			{
 				return;
 			}
 			if(this._isValidating)
 			{
 				//we were already validating, and something else told us to
-				//validate. that's bad.
-				this._validationQueue.addControl(this, true);
+				//validate. that's bad...
+				if(this._validationQueue)
+				{
+					//...so we'll just try to do it later
+					this._validationQueue.addControl(this, true);
+				}
 				return;
 			}
 			this._isValidating = true;
@@ -1589,13 +1681,13 @@ package feathers.core
 		public function setSize(width:Number, height:Number):void
 		{
 			this.explicitWidth = width;
-			var widthIsNaN:Boolean = isNaN(width);
+			var widthIsNaN:Boolean = width != width;
 			if(widthIsNaN)
 			{
 				this.actualWidth = 0;
 			}
 			this.explicitHeight = height;
-			var heightIsNaN:Boolean = isNaN(height);
+			var heightIsNaN:Boolean = height != height;
 			if(heightIsNaN)
 			{
 				this.actualHeight = 0;
@@ -1647,7 +1739,7 @@ package feathers.core
 		 */
 		protected function setSizeInternal(width:Number, height:Number, canInvalidate:Boolean):Boolean
 		{
-			if(!isNaN(this.explicitWidth))
+			if(this.explicitWidth == this.explicitWidth) //!isNaN
 			{
 				width = this.explicitWidth;
 			}
@@ -1662,7 +1754,7 @@ package feathers.core
 					width = this._maxWidth;
 				}
 			}
-			if(!isNaN(this.explicitHeight))
+			if(this.explicitHeight == this.explicitHeight) //!isNaN
 			{
 				height = this.explicitHeight;
 			}
@@ -1677,11 +1769,11 @@ package feathers.core
 					height = this._maxHeight;
 				}
 			}
-			if(isNaN(width))
+			if(width != width) //isNaN
 			{
 				throw new ArgumentError(ILLEGAL_WIDTH_ERROR);
 			}
-			if(isNaN(height))
+			if(height != height) //isNaN
 			{
 				throw new ArgumentError(ILLEGAL_HEIGHT_ERROR);
 			}
@@ -1724,7 +1816,7 @@ package feathers.core
 		 * After this function is called, <code>FeathersEventType.INITIALIZE</code>
 		 * is dispatched.
 		 *
-		 * @see feathers.events.FeathersEventType#INITIALIZE
+		 * @see #event:initialize feathers.events.FeathersEventType.INITIALIZE
 		 */
 		protected function initialize():void
 		{
@@ -1850,6 +1942,26 @@ package feathers.core
 		}
 
 		/**
+		 * @private
+		 */
+		protected function initializeInternal():void
+		{
+			if(this._isInitialized)
+			{
+				return;
+			}
+			this.initialize();
+			this.invalidate(); //invalidate everything
+			this._isInitialized = true;
+			this.dispatchEventWith(FeathersEventType.INITIALIZE);
+
+			if(this._styleProvider)
+			{
+				this._styleProvider.applyStyles(this);
+			}
+		}
+
+		/**
 		 * Default event handler for <code>FeathersEventType.FOCUS_IN</code>
 		 * that may be overridden in subclasses to perform additional actions
 		 * when the component receives focus.
@@ -1894,13 +2006,9 @@ package feathers.core
 		{
 			this._depth = getDisplayObjectDepthFromStage(this);
 			this._validationQueue = ValidationQueue.forStarling(Starling.current);
-
 			if(!this._isInitialized)
 			{
-				this.initialize();
-				this.invalidate(); //invalidate everything
-				this._isInitialized = true;
-				this.dispatchEventWith(FeathersEventType.INITIALIZE);
+				this.initializeInternal();
 			}
 			if(this.isInvalid())
 			{

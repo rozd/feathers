@@ -20,15 +20,18 @@ package feathers.examples.componentsExplorer.screens
 	{
 		public function TabBarScreen()
 		{
-			this.addEventListener(FeathersEventType.INITIALIZE, initializeHandler);
+			super();
 		}
 
 		private var _backButton:Button;
 		private var _tabBar:TabBar;
 		private var _label:Label;
 
-		protected function initializeHandler(event:Event):void
+		override protected function initialize():void
 		{
+			//never forget to call super.initialize()
+			super.initialize();
+
 			this.layout = new AnchorLayout();
 
 			this._tabBar = new TabBar();
@@ -44,7 +47,7 @@ package feathers.examples.componentsExplorer.screens
 
 			this._label = new Label();
 			this._label.text = "selectedIndex: " + this._tabBar.selectedIndex.toString();
-			const labelLayoutData:AnchorLayoutData = new AnchorLayoutData();
+			var labelLayoutData:AnchorLayoutData = new AnchorLayoutData();
 			labelLayoutData.horizontalCenter = 0;
 			labelLayoutData.verticalCenter = 0;
 			this._label.layoutData = labelLayoutData;

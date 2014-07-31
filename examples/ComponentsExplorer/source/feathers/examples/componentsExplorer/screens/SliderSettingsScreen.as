@@ -22,32 +22,36 @@ package feathers.examples.componentsExplorer.screens
 	{
 		public function SliderSettingsScreen()
 		{
-			this.addEventListener(FeathersEventType.INITIALIZE, initializeHandler);
+			super();
 		}
 
 		public var settings:SliderSettings;
 
 		private var _list:List;
-		private var _backButton:Button;
-		private var _directionPicker:PickerList;
+		private var _backButton:Button
 		private var _liveDraggingToggle:ToggleSwitch;
 		private var _stepStepper:NumericStepper;
 		private var _pageStepper:NumericStepper;
 
-		protected function initializeHandler(event:Event):void
+		override public function dispose():void
 		{
-			this.layout = new AnchorLayout();
+			//icon and accessory display objects in the list's data provider
+			//won't be automatically disposed because feathers cannot know if
+			//they need to be used again elsewhere or not. we need to dispose
+			//them manually.
+			this._list.dataProvider.dispose(disposeItemAccessory);
 
-			this._directionPicker = new PickerList();
-			this._directionPicker.typicalItem = Slider.DIRECTION_HORIZONTAL;
-			this._directionPicker.dataProvider = new ListCollection(new <String>
-			[
-				Slider.DIRECTION_HORIZONTAL,
-				Slider.DIRECTION_VERTICAL
-			]);
-			this._directionPicker.listProperties.typicalItem = Slider.DIRECTION_HORIZONTAL;
-			this._directionPicker.selectedItem = this.settings.direction;
-			this._directionPicker.addEventListener(Event.CHANGE, directionPicker_changeHandler);
+			//never forget to call super.dispose() because you don't want to
+			//create a memory leak!
+			super.dispose();
+		}
+
+		override protected function initialize():void
+		{
+			//never forget to call super.initialize()
+			super.initialize();
+
+			this.layout = new AnchorLayout();
 
 			this._liveDraggingToggle = new ToggleSwitch();
 			this._liveDraggingToggle.isSelected = this.settings.liveDragging;
@@ -71,7 +75,6 @@ package feathers.examples.componentsExplorer.screens
 			this._list.isSelectable = false;
 			this._list.dataProvider = new ListCollection(
 			[
-				{ label: "direction", accessory: this._directionPicker },
 				{ label: "liveDragging", accessory: this._liveDraggingToggle },
 				{ label: "step", accessory: this._stepStepper },
 				{ label: "page", accessory: this._pageStepper },
@@ -95,14 +98,14 @@ package feathers.examples.componentsExplorer.screens
 			this.backButtonHandler = this.onBackButton;
 		}
 
+		private function disposeItemAccessory(item:Object):void
+		{
+			DisplayObject(item.accessory).dispose();
+		}
+
 		private function onBackButton():void
 		{
 			this.dispatchEventWith(Event.COMPLETE);
-		}
-
-		private function directionPicker_changeHandler(event:Event):void
-		{
-			this.settings.direction = this._directionPicker.selectedItem as String;
 		}
 
 		private function liveDraggingToggle_changeHandler(event:Event):void

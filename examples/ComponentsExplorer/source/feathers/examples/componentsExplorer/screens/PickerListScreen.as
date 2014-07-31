@@ -23,14 +23,16 @@ package feathers.examples.componentsExplorer.screens
 		public function PickerListScreen()
 		{
 			super();
-			this.addEventListener(FeathersEventType.INITIALIZE, initializeHandler);
 		}
 
 		private var _backButton:Button;
 		private var _list:PickerList;
-		
-		protected function initializeHandler(event:Event):void
+
+		override protected function initialize():void
 		{
+			//never forget to call super.initialize()
+			super.initialize();
+
 			this.layout = new AnchorLayout();
 
 			var items:Array = [];
@@ -46,7 +48,7 @@ package feathers.examples.componentsExplorer.screens
 			this._list.dataProvider = new ListCollection(items);
 			//normally, the first item is selected, but let's show the prompt
 			this._list.selectedIndex = -1;
-			const listLayoutData:AnchorLayoutData = new AnchorLayoutData();
+			var listLayoutData:AnchorLayoutData = new AnchorLayoutData();
 			listLayoutData.horizontalCenter = 0;
 			listLayoutData.verticalCenter = 0;
 			this._list.layoutData = listLayoutData;

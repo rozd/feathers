@@ -7,6 +7,8 @@ accordance with the terms of the accompanying license agreement.
 */
 package feathers.core
 {
+	import feathers.skins.IStyleProvider;
+
 	import flash.geom.Rectangle;
 
 	/**
@@ -161,7 +163,7 @@ package feathers.core
 		function get nameList():TokenList;
 
 		/**
-		 * @copy feathers.core.FeathersControl#styleList
+		 * @copy feathers.core.FeathersControl#styleNameList
 		 */
 		function get styleNameList():TokenList;
 
@@ -174,6 +176,16 @@ package feathers.core
 		 * @private
 		 */
 		function set styleName(value:String):void
+
+		/**
+		 * @copy feathers.core.FeathersControl#styleProvider
+		 */
+		function get styleProvider():IStyleProvider;
+
+		/**
+		 * @private
+		 */
+		function set styleProvider(value:IStyleProvider):void
 
 		/**
 		 * @copy feathers.core.FeathersControl#setSize()

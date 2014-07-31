@@ -327,7 +327,7 @@ package feathers.data
 		 */
 		public function removeItemAt(index:int):Object
 		{
-			const item:Object = this._dataDescriptor.removeItemAt(this._data, index);
+			var item:Object = this._dataDescriptor.removeItemAt(this._data, index);
 			this.dispatchEventWith(Event.CHANGE);
 			this.dispatchEventWith(CollectionEventType.REMOVE_ITEM, false, index);
 			return item;
@@ -338,7 +338,7 @@ package feathers.data
 		 */
 		public function removeItem(item:Object):void
 		{
-			const index:int = this.getItemIndex(item);
+			var index:int = this.getItemIndex(item);
 			if(index >= 0)
 			{
 				this.removeItemAt(index);
@@ -390,7 +390,7 @@ package feathers.data
 		 */
 		public function addAll(collection:ListCollection):void
 		{
-			const otherCollectionLength:int = collection.length;
+			var otherCollectionLength:int = collection.length;
 			for(var i:int = 0; i < otherCollectionLength; i++)
 			{
 				var item:Object = collection.getItemAt(i);
@@ -404,7 +404,7 @@ package feathers.data
 		 */
 		public function addAllAt(collection:ListCollection, index:int):void
 		{
-			const otherCollectionLength:int = collection.length;
+			var otherCollectionLength:int = collection.length;
 			var currentIndex:int = index;
 			for(var i:int = 0; i < otherCollectionLength; i++)
 			{
@@ -444,6 +444,36 @@ package feathers.data
 		public function contains(item:Object):Boolean
 		{
 			return this.getItemIndex(item) >= 0;
+		}
+
+		/**
+		 * Calls a function for each item in the collection that may be used
+		 * to dispose any properties on the item. For example, display objects
+		 * or textures may need to be disposed.
+		 *
+		 * <p>The function is expected to have the following signature:</p>
+		 * <pre>function( item:Object ):void</pre>
+		 *
+		 * <p>In the following example, the items in the collection are disposed:</p>
+		 *
+		 * <listing version="3.0">
+		 * collection.dispose( function( item:Object ):void
+		 * {
+		 *     var accessory:DisplayObject = DisplayObject(item.accessory);
+		 *     accessory.dispose();
+		 * }</listing>
+		 *
+		 * @see http://doc.starling-framework.org/core/starling/display/DisplayObject.html#dispose() starling.display.DisplayObject.dispose()
+		 * @see http://doc.starling-framework.org/core/starling/textures/Texture.html#dispose() starling.textures.Texture.dispose()
+		 */
+		public function dispose(disposeItem:Function):void
+		{
+			var itemCount:int = this.length;
+			for(var i:int = 0; i < itemCount; i++)
+			{
+				var item:Object = this.getItemAt(i);
+				disposeItem(item);
+			}
 		}
 	}
 }

@@ -12,6 +12,7 @@ package feathers.controls
 	import feathers.core.IFocusDisplayObject;
 	import feathers.core.PropertyProxy;
 	import feathers.events.FeathersEventType;
+	import feathers.skins.IStyleProvider;
 
 	import flash.geom.Point;
 	import flash.ui.Mouse;
@@ -96,9 +97,11 @@ package feathers.controls
 	 * <p><strong>Important:</strong> <code>TextArea</code> is not recommended
 	 * for mobile. Instead, you should generally use a <code>TextInput</code>
 	 * with a <code>StageTextTextEditor</code> that has its <code>multiline</code>
-	 * property set to <code>true</code>. In that situation, the
-	 * <code>StageText</code> instance will automatically provide its own
-	 * scroll bars. <code>TextArea</code> is intended for use on desktop.</p>
+	 * property set to <code>true</code> and the text input's <code>verticalAlign</code>
+	 * property should be set to <code>TextInput.VERTICAL_ALIGN_JUSTIFY</code>.
+	 * In that situation, the <code>StageText</code> instance will automatically
+	 * provide its own operating system native scroll bars. <code>TextArea</code>
+	 * is intended for use on desktop and may not behave correctly on mobile.</p>
 	 *
 	 * <p>The following example sets the text in a text area, selects the text,
 	 * and listens for when the text value changes:</p>
@@ -202,6 +205,20 @@ package feathers.controls
 		public static const INTERACTION_MODE_TOUCH_AND_SCROLL_BARS:String = "touchAndScrollBars";
 
 		/**
+		 * @copy feathers.controls.Scroller#DECELERATION_RATE_NORMAL
+		 *
+		 * @see feathers.controls.Scroller#decelerationRate
+		 */
+		public static const DECELERATION_RATE_NORMAL:Number = 0.998;
+
+		/**
+		 * @copy feathers.controls.Scroller#DECELERATION_RATE_FAST
+		 *
+		 * @see feathers.controls.Scroller#decelerationRate
+		 */
+		public static const DECELERATION_RATE_FAST:Number = 0.99;
+
+		/**
 		 * The <code>TextArea</code> is enabled and does not have focus.
 		 */
 		public static const STATE_ENABLED:String = "enabled";
@@ -217,12 +234,20 @@ package feathers.controls
 		public static const STATE_FOCUSED:String = "focused";
 
 		/**
+		 * The default <code>IStyleProvider</code> for all <code>TextArea</code>
+		 * components.
+		 *
+		 * @default null
+		 * @see feathers.core.FeathersControl#styleProvider
+		 */
+		public static var globalStyleProvider:IStyleProvider;
+
+		/**
 		 * Constructor.
 		 */
 		public function TextArea()
 		{
 			super();
-
 			this.addEventListener(TouchEvent.TOUCH, textArea_touchHandler);
 			this.addEventListener(Event.REMOVED_FROM_STAGE, textArea_removedFromStageHandler);
 		}
@@ -266,6 +291,14 @@ package feathers.controls
 		 * @private
 		 */
 		protected var _ignoreTextChanges:Boolean = false;
+
+		/**
+		 * @private
+		 */
+		override protected function get defaultStyleProvider():IStyleProvider
+		{
+			return TextArea.globalStyleProvider;
+		}
 
 		/**
 		 * @private
@@ -688,7 +721,7 @@ package feathers.controls
 			}
 			if(!(value is PropertyProxy))
 			{
-				const newValue:PropertyProxy = new PropertyProxy();
+				var newValue:PropertyProxy = new PropertyProxy();
 				for(var propertyName:String in value)
 				{
 					newValue[propertyName] = value[propertyName];
@@ -742,6 +775,19 @@ package feathers.controls
 		}
 
 		/**
+		 * Manually removes focus from the text input control.
+		 */
+		public function clearFocus():void
+		{
+			this._isWaitingToSetFocus = false;
+			if(!this.textEditorViewPort || !this._textEditorHasFocus)
+			{
+				return;
+			}
+			this.textEditorViewPort.clearFocus();
+		}
+
+		/**
 		 * Sets the range of selected characters. If both values are the same,
 		 * or the end index is <code>-1</code>, the text insertion position is
 		 * changed and nothing is selected.
@@ -780,10 +826,10 @@ package feathers.controls
 		 */
 		override protected function draw():void
 		{
-			const textEditorInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_TEXT_EDITOR);
-			const dataInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_DATA);
-			const stylesInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STYLES);
-			const stateInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STATE);
+			var textEditorInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_TEXT_EDITOR);
+			var dataInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_DATA);
+			var stylesInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STYLES);
+			var stateInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STATE);
 
 			if(textEditorInvalid)
 			{
@@ -797,7 +843,7 @@ package feathers.controls
 
 			if(textEditorInvalid || dataInvalid)
 			{
-				const oldIgnoreTextChanges:Boolean = this._ignoreTextChanges;
+				var oldIgnoreTextChanges:Boolean = this._ignoreTextChanges;
 				this._ignoreTextChanges = true;
 				this.textEditorViewPort.text = this._text;
 				this._ignoreTextChanges = oldIgnoreTextChanges;
@@ -825,8 +871,8 @@ package feathers.controls
 		 */
 		override protected function autoSizeIfNeeded():Boolean
 		{
-			const needsWidth:Boolean = isNaN(this.explicitWidth);
-			const needsHeight:Boolean = isNaN(this.explicitHeight);
+			var needsWidth:Boolean = this.explicitWidth != this.explicitWidth; //isNaN
+			var needsHeight:Boolean = this.explicitHeight != this.explicitHeight; //isNaN
 			if(!needsWidth && !needsHeight)
 			{
 				return false;
@@ -836,7 +882,7 @@ package feathers.controls
 			var newHeight:Number = this.explicitHeight;
 			if(needsWidth)
 			{
-				if(!isNaN(this.originalBackgroundWidth))
+				if(this.originalBackgroundWidth == this.originalBackgroundWidth) //!isNaN
 				{
 					newWidth = this.originalBackgroundWidth;
 				}
@@ -847,7 +893,7 @@ package feathers.controls
 			}
 			if(needsHeight)
 			{
-				if(!isNaN(this.originalBackgroundHeight))
+				if(this.originalBackgroundHeight == this.originalBackgroundHeight) //!isNaN
 				{
 					newHeight = this.originalBackgroundHeight;
 				}
@@ -891,7 +937,7 @@ package feathers.controls
 			this.textEditorViewPort.addEventListener(FeathersEventType.FOCUS_IN, textEditor_focusInHandler);
 			this.textEditorViewPort.addEventListener(FeathersEventType.FOCUS_OUT, textEditor_focusOutHandler);
 
-			const oldViewPort:ITextEditorViewPort = ITextEditorViewPort(this._viewPort);
+			var oldViewPort:ITextEditorViewPort = ITextEditorViewPort(this._viewPort);
 			this.viewPort = this.textEditorViewPort;
 			if(oldViewPort)
 			{
@@ -915,8 +961,8 @@ package feathers.controls
 			}
 			if(this._pendingSelectionStartIndex >= 0)
 			{
-				const startIndex:int = this._pendingSelectionStartIndex;
-				const endIndex:int = this._pendingSelectionEndIndex;
+				var startIndex:int = this._pendingSelectionStartIndex;
+				var endIndex:int = this._pendingSelectionEndIndex;
 				this._pendingSelectionStartIndex = -1;
 				this._pendingSelectionEndIndex = -1;
 				this.selectRange(startIndex, endIndex);
@@ -931,14 +977,10 @@ package feathers.controls
 			this.textEditorViewPort.maxChars = this._maxChars;
 			this.textEditorViewPort.restrict = this._restrict;
 			this.textEditorViewPort.isEditable = this._isEditable;
-			const displayTextEditor:DisplayObject = DisplayObject(this.textEditorViewPort);
 			for(var propertyName:String in this._textEditorProperties)
 			{
-				if(displayTextEditor.hasOwnProperty(propertyName))
-				{
-					var propertyValue:Object = this._textEditorProperties[propertyName];
-					this.textEditorViewPort[propertyName] = propertyValue;
-				}
+				var propertyValue:Object = this._textEditorProperties[propertyName];
+				this.textEditorViewPort[propertyName] = propertyValue;
 			}
 		}
 
@@ -952,40 +994,37 @@ package feathers.controls
 			{
 				this.currentBackgroundSkin = DisplayObject(this._stateToSkinFunction(this, this._currentState, oldSkin));
 			}
+			else if(!this._isEnabled && this._backgroundDisabledSkin)
+			{
+				this.currentBackgroundSkin = this._backgroundDisabledSkin;
+			}
 			else if(this._hasFocus && this._backgroundFocusedSkin)
 			{
 				this.currentBackgroundSkin = this._backgroundFocusedSkin;
+			}
+			else
+			{
+				this.currentBackgroundSkin = this._backgroundSkin;
 			}
 			if(oldSkin != this.currentBackgroundSkin)
 			{
 				if(oldSkin)
 				{
-					oldSkin.visible = false;
-					if(this._stateToSkinFunction != null)
-					{
-						this.removeChild(oldSkin);
-					}
+					this.removeChild(oldSkin, false);
 				}
-				if(this._stateToSkinFunction != null)
+				if(this.currentBackgroundSkin)
 				{
 					this.addChildAt(this.currentBackgroundSkin, 0);
+					if(this.originalBackgroundWidth != this.originalBackgroundWidth) //isNaN
+					{
+						this.originalBackgroundWidth = this.currentBackgroundSkin.width;
+					}
+					if(this.originalBackgroundHeight != this.originalBackgroundHeight) //isNaN
+					{
+						this.originalBackgroundHeight = this.currentBackgroundSkin.height;
+					}
 				}
-				else
-				{
-					this.setChildIndex(this.currentBackgroundSkin, 0);
-				}
-				this.currentBackgroundSkin.visible = true;
-				if(isNaN(this.originalBackgroundWidth))
-				{
-					this.originalBackgroundWidth = this.currentBackgroundSkin.width;
-				}
-				if(isNaN(this.originalBackgroundHeight))
-				{
-					this.originalBackgroundHeight = this.currentBackgroundSkin.height;
-				}
-				return;
 			}
-			super.refreshBackgroundSkin();
 		}
 
 		/**
@@ -998,7 +1037,7 @@ package feathers.controls
 				return;
 			}
 			touch.getLocation(this.stage, HELPER_POINT);
-			const isInBounds:Boolean = this.contains(this.stage.hitTest(HELPER_POINT, true));
+			var isInBounds:Boolean = this.contains(this.stage.hitTest(HELPER_POINT, true));
 			if(!this._textEditorHasFocus && isInBounds)
 			{
 				this.globalToLocal(HELPER_POINT, HELPER_POINT);
@@ -1020,8 +1059,8 @@ package feathers.controls
 				return;
 			}
 
-			const horizontalScrollBar:DisplayObject = DisplayObject(this.horizontalScrollBar);
-			const verticalScrollBar:DisplayObject = DisplayObject(this.verticalScrollBar);
+			var horizontalScrollBar:DisplayObject = DisplayObject(this.horizontalScrollBar);
+			var verticalScrollBar:DisplayObject = DisplayObject(this.verticalScrollBar);
 			if(this._textAreaTouchPointID >= 0)
 			{
 				var touch:Touch = event.getTouch(this, TouchPhase.ENDED, this._textAreaTouchPointID);
@@ -1090,6 +1129,10 @@ package feathers.controls
 		 */
 		protected function textArea_removedFromStageHandler(event:Event):void
 		{
+			if(!this._focusManager && this._textEditorHasFocus)
+			{
+				this.clearFocus();
+			}
 			this._isWaitingToSetFocus = false;
 			this._textEditorHasFocus = false;
 			this._textAreaTouchPointID = -1;

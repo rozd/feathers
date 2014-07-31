@@ -23,7 +23,6 @@ package feathers.examples.layoutExplorer.screens
 		public function TiledRowsLayoutScreen()
 		{
 			super();
-			this.addEventListener(FeathersEventType.INITIALIZE, initializeHandler);
 		}
 
 		public var settings:TiledRowsLayoutSettings;
@@ -31,9 +30,12 @@ package feathers.examples.layoutExplorer.screens
 		private var _backButton:Button;
 		private var _settingsButton:Button;
 
-		protected function initializeHandler(event:Event):void
+		override protected function initialize():void
 		{
-			const layout:TiledRowsLayout = new TiledRowsLayout();
+			//never forget to call super.initialize()
+			super.initialize();
+
+			var layout:TiledRowsLayout = new TiledRowsLayout();
 			layout.paging = this.settings.paging;
 			layout.horizontalGap = this.settings.horizontalGap;
 			layout.verticalGap = this.settings.verticalGap;
@@ -45,22 +47,15 @@ package feathers.examples.layoutExplorer.screens
 			layout.verticalAlign = this.settings.verticalAlign;
 			layout.tileHorizontalAlign = this.settings.tileHorizontalAlign;
 			layout.tileVerticalAlign = this.settings.tileVerticalAlign;
-			layout.manageVisibility = true;
 
 			this.layout = layout;
 			this.snapToPages = this.settings.paging != TiledRowsLayout.PAGING_NONE;
 			this.snapScrollPositionsToPixels = true;
 
-			const isTablet:Boolean = DeviceCapabilities.isTablet(Starling.current.nativeStage);
+			var minQuadSize:Number = Math.min(Starling.current.stage.stageWidth, Starling.current.stage.stageHeight) / 15;
 			for(var i:int = 0; i < this.settings.itemCount; i++)
 			{
-				var size:Number = (44 + 88 * Math.random()) * this.dpiScale;
-				if(isTablet)
-				{
-					//bigger for tablets, just because there's so much more room
-					//and this demo should include scrolling
-					size *= 1.5;
-				}
+				var size:Number = (minQuadSize + minQuadSize * 2 * Math.random());
 				var quad:Quad = new Quad(size, size, 0xff8800);
 				this.addChild(quad);
 			}

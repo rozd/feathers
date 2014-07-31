@@ -24,7 +24,6 @@ package feathers.examples.layoutExplorer.screens
 		public function VerticalLayoutScreen()
 		{
 			super();
-			this.addEventListener(FeathersEventType.INITIALIZE, initializeHandler);
 		}
 
 		public var settings:VerticalLayoutSettings;
@@ -32,9 +31,12 @@ package feathers.examples.layoutExplorer.screens
 		private var _backButton:Button;
 		private var _settingsButton:Button;
 
-		protected function initializeHandler(event:Event):void
+		override protected function initialize():void
 		{
-			const layout:VerticalLayout = new VerticalLayout();
+			//never forget to call super.initialize()
+			super.initialize();
+
+			var layout:VerticalLayout = new VerticalLayout();
 			layout.gap = this.settings.gap;
 			layout.paddingTop = this.settings.paddingTop;
 			layout.paddingRight = this.settings.paddingRight;
@@ -42,7 +44,6 @@ package feathers.examples.layoutExplorer.screens
 			layout.paddingLeft = this.settings.paddingLeft;
 			layout.horizontalAlign = this.settings.horizontalAlign;
 			layout.verticalAlign = this.settings.verticalAlign;
-			layout.manageVisibility = true;
 
 			this.layout = layout;
 			//when the scroll policy is set to on, the "elastic" edges will be
@@ -50,9 +51,10 @@ package feathers.examples.layoutExplorer.screens
 			this.verticalScrollPolicy = ScrollContainer.SCROLL_POLICY_ON;
 			this.snapScrollPositionsToPixels = true;
 
+			var minQuadSize:Number = Math.min(Starling.current.stage.stageWidth, Starling.current.stage.stageHeight) / 15;
 			for(var i:int = 0; i < this.settings.itemCount; i++)
 			{
-				var size:Number = (44 + 88 * Math.random()) * this.dpiScale;
+				var size:Number = (minQuadSize + minQuadSize * 2 * Math.random());
 				var quad:Quad = new Quad(size, size, 0xff8800);
 				this.addChild(quad);
 			}

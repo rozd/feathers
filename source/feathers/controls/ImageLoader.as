@@ -9,6 +9,7 @@ package feathers.controls
 {
 	import feathers.core.FeathersControl;
 	import feathers.events.FeathersEventType;
+	import feathers.skins.IStyleProvider;
 
 	import flash.display.Bitmap;
 	import flash.display.BitmapData;
@@ -27,6 +28,7 @@ package feathers.controls
 	import flash.system.ImageDecodingPolicy;
 	import flash.system.LoaderContext;
 	import flash.utils.ByteArray;
+	import flash.utils.setTimeout;
 
 	import starling.core.RenderSupport;
 	import starling.core.Starling;
@@ -37,6 +39,7 @@ package feathers.controls
 	import starling.textures.TextureSmoothing;
 	import starling.utils.RectangleUtil;
 	import starling.utils.ScaleMode;
+	import starling.utils.SystemUtil;
 
 	/**
 	 * Dispatched when the source content finishes loading.
@@ -144,6 +147,15 @@ package feathers.controls
 		protected static var textureQueueTail:ImageLoader;
 
 		/**
+		 * The default <code>IStyleProvider</code> for all <code>ImageLoader</code>
+		 * components.
+		 *
+		 * @default null
+		 * @see feathers.core.FeathersControl#styleProvider
+		 */
+		public static var globalStyleProvider:IStyleProvider;
+
+		/**
 		 * Constructor.
 		 */
 		public function ImageLoader()
@@ -207,6 +219,14 @@ package feathers.controls
 		 * @private
 		 */
 		protected var _isTextureOwner:Boolean = false;
+
+		/**
+		 * @private
+		 */
+		override protected function get defaultStyleProvider():IStyleProvider
+		{
+			return ImageLoader.globalStyleProvider;
+		}
 
 		/**
 		 * @private
@@ -368,7 +388,8 @@ package feathers.controls
 		private var _textureScale:Number = 1;
 
 		/**
-		 * The scale of the texture. Useful for UI that scales to DPI.
+		 * Scales the texture dimensions during measurement. Useful for UI that
+		 * should scale based on screen density or resolution.
 		 *
 		 * <p>In the following example, the image loader's texture scale is
 		 * customized:</p>
@@ -412,8 +433,8 @@ package feathers.controls
 		 *
 		 * @default starling.textures.TextureSmoothing.BILINEAR
 		 *
-		 * @see starling.textures.TextureSmoothing
-		 * @see starling.display.Image#smoothing
+		 * @see http://doc.starling-framework.org/core/starling/textures/TextureSmoothing.html starling.textures.TextureSmoothing
+		 * @see http://doc.starling-framework.org/core/starling/display/Image.html#smoothing starling.display.Image.smoothing
 		 */
 		public function get smoothing():String
 		{
@@ -449,7 +470,7 @@ package feathers.controls
 		 *
 		 * @default 0xffffff
 		 *
-		 * @see starling.display.Image#color
+		 * @see http://doc.starling-framework.org/core/starling/display/Image.html#color starling.display.Image.color
 		 */
 		public function get color():uint
 		{
@@ -485,7 +506,7 @@ package feathers.controls
 		 *
 		 * @default flash.display3d.Context3DTextureFormat.BGRA
 		 *
-		 * @see flash.display3d.Context3DTextureFormat
+		 * @see http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/display3D/Context3DTextureFormat.html flash.display3d.Context3DTextureFormat
 		 */
 		public function get textureFormat():String
 		{
@@ -975,9 +996,9 @@ package feathers.controls
 		 */
 		override protected function draw():void
 		{
-			const dataInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_DATA);
-			const layoutInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_LAYOUT);
-			const stylesInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STYLES);
+			var dataInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_DATA);
+			var layoutInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_LAYOUT);
+			var stylesInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STYLES);
 			var sizeInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_SIZE);
 
 			if(dataInvalid)
@@ -1016,8 +1037,8 @@ package feathers.controls
 		 */
 		protected function autoSizeIfNeeded():Boolean
 		{
-			var needsWidth:Boolean = isNaN(this.explicitWidth);
-			var needsHeight:Boolean = isNaN(this.explicitHeight);
+			var needsWidth:Boolean = this.explicitWidth != this.explicitWidth; //isNaN
+			var needsHeight:Boolean = this.explicitHeight != this.explicitHeight; //isNaN
 			if(!needsWidth && !needsHeight)
 			{
 				return false;
@@ -1078,7 +1099,7 @@ package feathers.controls
 			}
 			else
 			{
-				const sourceURL:String = this._source as String;
+				var sourceURL:String = this._source as String;
 				if(!sourceURL)
 				{
 					this._lastURL = null;
@@ -1305,6 +1326,18 @@ package feathers.controls
 		 */
 		protected function replaceBitmapDataTexture(bitmapData:BitmapData):void
 		{
+			if(Starling.handleLostContext && !Starling.current.contextValid)
+			{
+				trace("ImageLoader: Context lost while processing loaded image, retrying...");
+				setTimeout(replaceBitmapDataTexture, 1, bitmapData);
+				return;
+			}
+			if(!SystemUtil.isDesktop && !SystemUtil.isApplicationActive)
+			{
+				//avoiding stage3d calls when a mobile application isn't active
+				SystemUtil.executeWhenApplicationIsActive(replaceBitmapDataTexture, bitmapData);
+				return;
+			}
 			this._texture = Texture.fromBitmapData(bitmapData, false, false, 1, this._textureFormat);
 			if(Starling.handleLostContext)
 			{
@@ -1329,6 +1362,18 @@ package feathers.controls
 		 */
 		protected function replaceRawTextureData(rawData:ByteArray):void
 		{
+			if(Starling.handleLostContext && !Starling.current.contextValid)
+			{
+				trace("ImageLoader: Context lost while processing loaded image, retrying...");
+				setTimeout(replaceRawTextureData, 1, rawData);
+				return;
+			}
+			if(!SystemUtil.isDesktop && !SystemUtil.isApplicationActive)
+			{
+				//avoiding stage3d calls when a mobile application isn't active
+				SystemUtil.executeWhenApplicationIsActive(replaceRawTextureData, rawData);
+				return;
+			}
 			this._texture = Texture.fromAtfData(rawData);
 			if(Starling.handleLostContext)
 			{
@@ -1452,13 +1497,13 @@ package feathers.controls
 		{
 			if(this._pendingBitmapDataTexture)
 			{
-				const bitmapData:BitmapData = this._pendingBitmapDataTexture;
+				var bitmapData:BitmapData = this._pendingBitmapDataTexture;
 				this._pendingBitmapDataTexture = null;
 				this.replaceBitmapDataTexture(bitmapData);
 			}
 			if(this._pendingRawTextureData)
 			{
-				const rawData:ByteArray = this._pendingRawTextureData;
+				var rawData:ByteArray = this._pendingRawTextureData;
 				this._pendingRawTextureData = null;
 				this.replaceRawTextureData(rawData);
 			}
@@ -1497,14 +1542,14 @@ package feathers.controls
 		 */
 		protected function loader_completeHandler(event:flash.events.Event):void
 		{
-			const bitmap:Bitmap = Bitmap(this.loader.content);
+			var bitmap:Bitmap = Bitmap(this.loader.content);
 			this.loader.contentLoaderInfo.removeEventListener(flash.events.Event.COMPLETE, loader_completeHandler);
 			this.loader.contentLoaderInfo.removeEventListener(IOErrorEvent.IO_ERROR, loader_errorHandler);
 			this.loader.contentLoaderInfo.removeEventListener(SecurityErrorEvent.SECURITY_ERROR, loader_errorHandler);
 			this.loader = null;
 
 			this.cleanupTexture();
-			const bitmapData:BitmapData = bitmap.bitmapData;
+			var bitmapData:BitmapData = bitmap.bitmapData;
 			if(this._delayTextureCreation)
 			{
 				this._pendingBitmapDataTexture = bitmapData;
@@ -1539,7 +1584,7 @@ package feathers.controls
 		 */
 		protected function rawDataLoader_completeHandler(event:flash.events.Event):void
 		{
-			const rawData:ByteArray = ByteArray(this.urlLoader.data);
+			var rawData:ByteArray = ByteArray(this.urlLoader.data);
 			this.urlLoader.removeEventListener(flash.events.Event.COMPLETE, rawDataLoader_completeHandler);
 			this.urlLoader.removeEventListener(IOErrorEvent.IO_ERROR, rawDataLoader_errorHandler);
 			this.urlLoader.removeEventListener(SecurityErrorEvent.SECURITY_ERROR, rawDataLoader_errorHandler);

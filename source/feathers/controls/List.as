@@ -15,6 +15,7 @@ package feathers.controls
 	import feathers.events.CollectionEventType;
 	import feathers.layout.ILayout;
 	import feathers.layout.VerticalLayout;
+	import feathers.skins.IStyleProvider;
 
 	import flash.geom.Point;
 	import flash.ui.Keyboard;
@@ -221,6 +222,29 @@ package feathers.controls
 		 * @see feathers.controls.Scroller#interactionMode
 		 */
 		public static const INTERACTION_MODE_TOUCH_AND_SCROLL_BARS:String = "touchAndScrollBars";
+
+		/**
+		 * @copy feathers.controls.Scroller#DECELERATION_RATE_NORMAL
+		 *
+		 * @see feathers.controls.Scroller#decelerationRate
+		 */
+		public static const DECELERATION_RATE_NORMAL:Number = 0.998;
+
+		/**
+		 * @copy feathers.controls.Scroller#DECELERATION_RATE_FAST
+		 *
+		 * @see feathers.controls.Scroller#decelerationRate
+		 */
+		public static const DECELERATION_RATE_FAST:Number = 0.99;
+
+		/**
+		 * The default <code>IStyleProvider</code> for all <code>List</code>
+		 * components.
+		 *
+		 * @default null
+		 * @see feathers.core.FeathersControl#styleProvider
+		 */
+		public static var globalStyleProvider:IStyleProvider;
 		
 		/**
 		 * Constructor.
@@ -236,6 +260,14 @@ package feathers.controls
 		 * The guts of the List's functionality. Handles layout and selection.
 		 */
 		protected var dataViewPort:ListDataViewPort;
+
+		/**
+		 * @private
+		 */
+		override protected function get defaultStyleProvider():IStyleProvider
+		{
+			return List.globalStyleProvider;
+		}
 
 		/**
 		 * @private
@@ -610,7 +642,7 @@ package feathers.controls
 		 */
 		public function set selectedIndices(value:Vector.<int>):void
 		{
-			const oldValue:Vector.<int> = this._selectedIndices.data as Vector.<int>;
+			var oldValue:Vector.<int> = this._selectedIndices.data as Vector.<int>;
 			if(oldValue == value)
 			{
 				return;
@@ -683,8 +715,8 @@ package feathers.controls
 				this.selectedIndex = -1;
 				return;
 			}
-			const indices:Vector.<int> = new <int>[];
-			const itemCount:int = value.length;
+			var indices:Vector.<int> = new <int>[];
+			var itemCount:int = value.length;
 			for(var i:int = 0; i < itemCount; i++)
 			{
 				var item:Object = value[i];
@@ -881,7 +913,7 @@ package feathers.controls
 		 *
 		 * @default null
 		 *
-		 * @see feathers.core.FeathersControl#nameList
+		 * @see feathers.core.FeathersControl#styleNameList
 		 */
 		public function get itemRendererName():String
 		{
@@ -964,7 +996,7 @@ package feathers.controls
 			}
 			if(!(value is PropertyProxy))
 			{
-				const newValue:PropertyProxy = new PropertyProxy();
+				var newValue:PropertyProxy = new PropertyProxy();
 				for(var propertyName:String in value)
 				{
 					newValue[propertyName] = value[propertyName];
@@ -993,7 +1025,7 @@ package feathers.controls
 		/**
 		 * @private
 		 */
-		override public function scrollToPosition(horizontalScrollPosition:Number, verticalScrollPosition:Number, animationDuration:Number = 0):void
+		override public function scrollToPosition(horizontalScrollPosition:Number, verticalScrollPosition:Number, animationDuration:Number = NaN):void
 		{
 			this.pendingItemIndex = -1;
 			super.scrollToPosition(horizontalScrollPosition, verticalScrollPosition, animationDuration);
@@ -1002,7 +1034,7 @@ package feathers.controls
 		/**
 		 * @private
 		 */
-		override public function scrollToPageIndex(horizontalPageIndex:int, verticalPageIndex:int, animationDuration:Number = 0):void
+		override public function scrollToPageIndex(horizontalPageIndex:int, verticalPageIndex:int, animationDuration:Number = NaN):void
 		{
 			this.pendingItemIndex = -1;
 			super.scrollToPageIndex(horizontalPageIndex, verticalPageIndex, animationDuration);
@@ -1066,7 +1098,7 @@ package feathers.controls
 		 */
 		override protected function initialize():void
 		{
-			const hasLayout:Boolean = this._layout != null;
+			var hasLayout:Boolean = this._layout != null;
 
 			super.initialize();
 			
@@ -1088,7 +1120,7 @@ package feathers.controls
 					this.verticalScrollPolicy = SCROLL_POLICY_ON;
 				}
 
-				const layout:VerticalLayout = new VerticalLayout();
+				var layout:VerticalLayout = new VerticalLayout();
 				layout.useVirtualLayout = true;
 				layout.paddingTop = layout.paddingRight = layout.paddingBottom =
 					layout.paddingLeft = 0;
@@ -1134,7 +1166,7 @@ package feathers.controls
 		{
 			if(this.pendingItemIndex >= 0)
 			{
-				const item:Object = this._dataProvider.getItemAt(this.pendingItemIndex);
+				var item:Object = this._dataProvider.getItemAt(this.pendingItemIndex);
 				if(item is Object)
 				{
 					this.dataViewPort.getScrollPositionForIndex(this.pendingItemIndex, HELPER_POINT);

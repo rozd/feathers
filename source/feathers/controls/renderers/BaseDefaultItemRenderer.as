@@ -10,6 +10,7 @@ package feathers.controls.renderers
 	import feathers.controls.Button;
 	import feathers.controls.ImageLoader;
 	import feathers.controls.Scroller;
+	import feathers.controls.ToggleButton;
 	import feathers.controls.text.BitmapFontTextRenderer;
 	import feathers.core.FeathersControl;
 	import feathers.core.IFeathersControl;
@@ -31,21 +32,21 @@ package feathers.controls.renderers
 	/**
 	 * An abstract class for item renderer implementations.
 	 */
-	public class BaseDefaultItemRenderer extends Button
+	public class BaseDefaultItemRenderer extends ToggleButton
 	{
 		/**
-		 * The default value added to the <code>nameList</code> of the icon
+		 * The default value added to the <code>styleNameList</code> of the icon
 		 * label, if it exists.
 		 *
-		 * @see feathers.core.IFeathersControl#nameList
+		 * @see feathers.core.FeathersControl#styleNameList
 		 */
 		public static const DEFAULT_CHILD_NAME_ICON_LABEL:String = "feathers-item-renderer-icon-label";
 
 		/**
-		 * The default value added to the <code>nameList</code> of the accessory
-		 * label, if it exists.
+		 * The default value added to the <code>styleNameList</code> of the
+		 * accessory label, if it exists.
 		 *
-		 * @see feathers.core.IFeathersControl#nameList
+		 * @see feathers.core.FeathersControl#styleNameList
 		 */
 		public static const DEFAULT_CHILD_NAME_ACCESSORY_LABEL:String = "feathers-item-renderer-accessory-label";
 
@@ -232,18 +233,18 @@ package feathers.controls.renderers
 		}
 
 		/**
-		 * The value added to the <code>nameList</code> of the icon label, if it
-		 * exists.
+		 * The value added to the <code>styleNameList</code> of the icon label,
+		 * if it exists.
 		 *
-		 * @see feathers.core.IFeathersControl#nameList
+		 * @see feathers.core.FeathersControl#styleNameList
 		 */
 		protected var iconLabelName:String = DEFAULT_CHILD_NAME_ICON_LABEL;
 
 		/**
-		 * The value added to the <code>nameList</code> of the accessory label,
-		 * if it exists.
+		 * The value added to the <code>styleNameList</code> of the accessory
+		 * label, if it exists.
 		 *
-		 * @see feathers.core.IFeathersControl#nameList
+		 * @see feathers.core.FeathersControl#styleNameList
 		 */
 		protected var accessoryLabelName:String = DEFAULT_CHILD_NAME_ACCESSORY_LABEL;
 
@@ -1100,6 +1101,12 @@ package feathers.controls.renderers
 		 * The field in the item that contains a display object to be displayed
 		 * as an icon or other graphic next to the label in the renderer.
 		 *
+		 * <p>Warning: It is your responsibility to dispose all icons
+		 * included in the data provider and accessed with <code>iconField</code>,
+		 * or any display objects returned by <code>iconFunction</code>.
+		 * These display objects will not be disposed when the list is disposed.
+		 * Not disposing an icon may result in a memory leak.</p>
+		 *
 		 * <p>All of the icon fields and functions, ordered by priority:</p>
 		 * <ol>
 		 *     <li><code>iconSourceFunction</code></li>
@@ -1156,6 +1163,12 @@ package feathers.controls.renderers
 		 * performance. It's better to return a new icon the first time this
 		 * function is called for a particular item and then return the same
 		 * icon if that item is passed to this function again.</p>
+		 *
+		 * <p>Warning: It is your responsibility to dispose all icons
+		 * included in the data provider and accessed with <code>iconField</code>,
+		 * or any display objects returned by <code>iconFunction</code>.
+		 * These display objects will not be disposed when the list is disposed.
+		 * Not disposing an icon may result in a memory leak.</p>
 		 *
 		 * <p>The function is expected to have the following signature:</p>
 		 * <pre>function( item:Object ):DisplayObject</pre>
@@ -1490,6 +1503,12 @@ package feathers.controls.renderers
 		 * <code>Image</code> in the accessory position, it's better for
 		 * performance to use <code>accessorySourceField</code> instead.
 		 *
+		 * <p>Warning: It is your responsibility to dispose all accessories
+		 * included in the data provider and accessed with <code>accessoryField</code>,
+		 * or any display objects returned by <code>accessoryFunction</code>.
+		 * These display objects will not be disposed when the list is disposed.
+		 * Not disposing an accessory may result in a memory leak.</p>
+		 *
 		 * <p>All of the accessory fields and functions, ordered by priority:</p>
 		 * <ol>
 		 *     <li><code>accessorySourceFunction</code></li>
@@ -1551,6 +1570,12 @@ package feathers.controls.renderers
 		 * and hurt performance. It's better to return a new accessory the first
 		 * time this function is called for a particular item and then return
 		 * the same accessory if that item is passed to this function again.</p>
+		 *
+		 * <p>Warning: It is your responsibility to dispose all accessories
+		 * included in the data provider and accessed with <code>accessoryField</code>,
+		 * or any display objects returned by <code>accessoryFunction</code>.
+		 * These display objects will not be disposed when the list is disposed.
+		 * Not disposing an accessory may result in a memory leak.</p>
 		 *
 		 * <p>The function is expected to have the following signature:</p>
 		 * <pre>function( item:Object ):DisplayObject</pre>
@@ -2374,8 +2399,8 @@ package feathers.controls.renderers
 		 * A function that generates an <code>ImageLoader</code> that uses the result
 		 * of <code>iconSourceField</code> or <code>iconSourceFunction</code>.
 		 * Useful for transforming the <code>ImageLoader</code> in some way. For
-		 * example, you might want to scale the texture for current DPI or apply
-		 * pixel snapping.
+		 * example, you might want to scale the texture for current screen
+		 * density or apply pixel snapping.
 		 *
 		 * <p>The function is expected to have the following signature:</p>
 		 * <pre>function():ImageLoader</pre>
@@ -2525,7 +2550,7 @@ package feathers.controls.renderers
 			}
 			if(!(value is PropertyProxy))
 			{
-				const newValue:PropertyProxy = new PropertyProxy();
+				var newValue:PropertyProxy = new PropertyProxy();
 				for(var propertyName:String in value)
 				{
 					newValue[propertyName] = value[propertyName];
@@ -2553,8 +2578,8 @@ package feathers.controls.renderers
 		 * A function that generates an <code>ImageLoader</code> that uses the result
 		 * of <code>accessorySourceField</code> or <code>accessorySourceFunction</code>.
 		 * Useful for transforming the <code>ImageLoader</code> in some way. For
-		 * example, you might want to scale the texture for current DPI or apply
-		 * pixel snapping.
+		 * example, you might want to scale the texture for current screen
+		 * density or apply pixel snapping.
 		 *
 		 * <p>The function is expected to have the following signature:</p>
 		 * <pre>function():ImageLoader</pre>
@@ -2704,7 +2729,7 @@ package feathers.controls.renderers
 			}
 			if(!(value is PropertyProxy))
 			{
-				const newValue:PropertyProxy = new PropertyProxy();
+				var newValue:PropertyProxy = new PropertyProxy();
 				for(var propertyName:String in value)
 				{
 					newValue[propertyName] = value[propertyName];
@@ -2732,8 +2757,8 @@ package feathers.controls.renderers
 		 * A function that generates an <code>ImageLoader</code> that uses the result
 		 * of <code>skinSourceField</code> or <code>skinSourceFunction</code>.
 		 * Useful for transforming the <code>ImageLoader</code> in some way. For
-		 * example, you might want to scale the texture for current DPI or apply
-		 * pixel snapping.
+		 * example, you might want to scale the texture for current screen
+		 * density or apply pixel snapping.
 		 *
 		 * <p>The function is expected to have the following signature:</p>
 		 * <pre>function():ImageLoader</pre>
@@ -3091,16 +3116,23 @@ package feathers.controls.renderers
 		 */
 		override protected function autoSizeIfNeeded():Boolean
 		{
-			var needsWidth:Boolean = isNaN(this.explicitWidth);
-			var needsHeight:Boolean = isNaN(this.explicitHeight);
+			var needsWidth:Boolean = this.explicitWidth != this.explicitWidth; //isNaN
+			var needsHeight:Boolean = this.explicitHeight != this.explicitHeight; //isNaN
 			if(!needsWidth && !needsHeight)
 			{
 				return false;
 			}
-			const oldIgnoreAccessoryResizes:Boolean = this._ignoreAccessoryResizes;
+			var oldIgnoreAccessoryResizes:Boolean = this._ignoreAccessoryResizes;
 			this._ignoreAccessoryResizes = true;
 			this.refreshMaxLabelWidth(true);
-			this.labelTextRenderer.measureText(HELPER_POINT);
+			if(this.labelTextRenderer)
+			{
+				this.labelTextRenderer.measureText(HELPER_POINT);
+			}
+			else
+			{
+				HELPER_POINT.setTo(0, 0);
+			}
 			var newWidth:Number = this.explicitWidth;
 			if(needsWidth)
 			{
@@ -3226,7 +3258,7 @@ package feathers.controls.renderers
 				return width;
 			}
 			var accessoryWidth:Number = this.accessory.width;
-			if(accessoryWidth != accessoryWidth)
+			if(accessoryWidth != accessoryWidth) //isNaN
 			{
 				return width;
 			}
@@ -3663,11 +3695,8 @@ package feathers.controls.renderers
 				var displayIconLabel:DisplayObject = DisplayObject(this.iconLabel);
 				for(var propertyName:String in this._iconLabelProperties)
 				{
-					if(displayIconLabel.hasOwnProperty(propertyName))
-					{
-						var propertyValue:Object = this._iconLabelProperties[propertyName];
-						displayIconLabel[propertyName] = propertyValue;
-					}
+					var propertyValue:Object = this._iconLabelProperties[propertyName];
+					displayIconLabel[propertyName] = propertyValue;
 				}
 			}
 		}
@@ -3686,11 +3715,8 @@ package feathers.controls.renderers
 				var displayAccessoryLabel:DisplayObject = DisplayObject(this.accessoryLabel);
 				for(var propertyName:String in this._accessoryLabelProperties)
 				{
-					if(displayAccessoryLabel.hasOwnProperty(propertyName))
-					{
-						var propertyValue:Object = this._accessoryLabelProperties[propertyName];
-						displayAccessoryLabel[propertyName] = propertyValue;
-					}
+					var propertyValue:Object = this._accessoryLabelProperties[propertyName];
+					displayAccessoryLabel[propertyName] = propertyValue;
 				}
 			}
 		}
@@ -3773,10 +3799,10 @@ package feathers.controls.renderers
 			var oldIgnoreAccessoryResizes:Boolean = this._ignoreAccessoryResizes;
 			this._ignoreAccessoryResizes = true;
 			this.refreshMaxLabelWidth(false);
-			if(this._label)
+			if(this._label && this.labelTextRenderer)
 			{
 				this.labelTextRenderer.validate();
-				const labelRenderer:DisplayObject = DisplayObject(this.labelTextRenderer);
+				var labelRenderer:DisplayObject = DisplayObject(this.labelTextRenderer);
 			}
 			var iconIsInLayout:Boolean = this.currentIcon && this._iconPosition != ICON_POSITION_MANUAL;
 			var accessoryIsInLayout:Boolean = this.accessory && this._accessoryPosition != ACCESSORY_POSITION_MANUAL;
@@ -3785,7 +3811,7 @@ package feathers.controls.renderers
 			{
 				accessoryGap = this._gap;
 			}
-			if(this._label && iconIsInLayout && accessoryIsInLayout)
+			if(this._label && this.labelTextRenderer && iconIsInLayout && accessoryIsInLayout)
 			{
 				this.positionSingleChild(labelRenderer);
 				if(this._layoutOrder == LAYOUT_ORDER_LABEL_ACCESSORY_ICON)
@@ -3808,7 +3834,7 @@ package feathers.controls.renderers
 					this.positionRelativeToOthers(this.accessory, labelRenderer, this.currentIcon, this._accessoryPosition, accessoryGap, this._iconPosition, this._gap);
 				}
 			}
-			else if(this._label)
+			else if(this._label && this.labelTextRenderer)
 			{
 				this.positionSingleChild(labelRenderer);
 				//we won't position both the icon and accessory here, otherwise
@@ -3855,7 +3881,7 @@ package feathers.controls.renderers
 				this.currentIcon.x += this._iconOffsetX;
 				this.currentIcon.y += this._iconOffsetY;
 			}
-			if(this._label)
+			if(this._label && this.labelTextRenderer)
 			{
 				this.labelTextRenderer.x += this._labelOffsetX;
 				this.labelTextRenderer.y += this._labelOffsetY;
@@ -3871,7 +3897,11 @@ package feathers.controls.renderers
 			var calculatedWidth:Number = this.actualWidth;
 			if(forMeasurement)
 			{
-				calculatedWidth = isNaN(this.explicitWidth) ? this._maxWidth : this.explicitWidth;
+				calculatedWidth = this.explicitWidth;
+				if(calculatedWidth != calculatedWidth) //isNaN
+				{
+					calculatedWidth = this._maxWidth;
+				}
 			}
 			calculatedWidth -= (this._paddingLeft + this._paddingRight);
 
@@ -3995,7 +4025,10 @@ package feathers.controls.renderers
 			{
 				calculatedWidth = 0;
 			}
-			this.labelTextRenderer.maxWidth = calculatedWidth;
+			if(this.labelTextRenderer)
+			{
+				this.labelTextRenderer.maxWidth = calculatedWidth;
+			}
 		}
 
 		/**
@@ -4003,10 +4036,10 @@ package feathers.controls.renderers
 		 */
 		protected function positionRelativeToOthers(object:DisplayObject, relativeTo:DisplayObject, relativeTo2:DisplayObject, position:String, gap:Number, otherPosition:String, otherGap:Number):void
 		{
-			const relativeToX:Number = relativeTo2 ? Math.min(relativeTo.x, relativeTo2.x) : relativeTo.x;
-			const relativeToY:Number = relativeTo2 ? Math.min(relativeTo.y, relativeTo2.y) : relativeTo.y;
-			const relativeToWidth:Number = relativeTo2 ? (Math.max(relativeTo.x + relativeTo.width, relativeTo2.x + relativeTo2.width) - relativeToX) : relativeTo.width;
-			const relativeToHeight:Number = relativeTo2 ? (Math.max(relativeTo.y + relativeTo.height, relativeTo2.y + relativeTo2.height) - relativeToY) : relativeTo.height;
+			var relativeToX:Number = relativeTo2 ? Math.min(relativeTo.x, relativeTo2.x) : relativeTo.x;
+			var relativeToY:Number = relativeTo2 ? Math.min(relativeTo.y, relativeTo2.y) : relativeTo.y;
+			var relativeToWidth:Number = relativeTo2 ? (Math.max(relativeTo.x + relativeTo.width, relativeTo2.x + relativeTo2.width) - relativeToX) : relativeTo.width;
+			var relativeToHeight:Number = relativeTo2 ? (Math.max(relativeTo.y + relativeTo.height, relativeTo2.y + relativeTo2.height) - relativeToY) : relativeTo.height;
 			var newRelativeToX:Number = relativeToX;
 			var newRelativeToY:Number = relativeToY;
 			if(position == ACCESSORY_POSITION_TOP)
@@ -4024,7 +4057,7 @@ package feathers.controls.renderers
 					}
 					else if(this._verticalAlign == VERTICAL_ALIGN_MIDDLE)
 					{
-						newRelativeToY += (object.height + gap) / 2;
+						newRelativeToY += Math.round((object.height + gap) / 2);
 					}
 					if(relativeTo2)
 					{
@@ -4048,7 +4081,7 @@ package feathers.controls.renderers
 					}
 					else if(this._horizontalAlign == HORIZONTAL_ALIGN_CENTER)
 					{
-						newRelativeToX -= (object.width + gap) / 2;
+						newRelativeToX -= Math.round((object.width + gap) / 2);
 					}
 					if(relativeTo2)
 					{
@@ -4072,7 +4105,7 @@ package feathers.controls.renderers
 					}
 					else if(this._verticalAlign == VERTICAL_ALIGN_MIDDLE)
 					{
-						newRelativeToY -= (object.height + gap) / 2;
+						newRelativeToY -= Math.round((object.height + gap) / 2);
 					}
 					if(relativeTo2)
 					{
@@ -4096,7 +4129,7 @@ package feathers.controls.renderers
 					}
 					else if(this._horizontalAlign == HORIZONTAL_ALIGN_CENTER)
 					{
-						newRelativeToX += (gap + object.width) / 2;
+						newRelativeToX += Math.round((gap + object.width) / 2);
 					}
 					if(relativeTo2)
 					{
@@ -4134,35 +4167,35 @@ package feathers.controls.renderers
 				{
 					if(position == ACCESSORY_POSITION_RIGHT && otherPosition == ACCESSORY_POSITION_LEFT)
 					{
-						relativeTo.x = relativeTo2.x + (object.x - relativeTo2.x + relativeTo2.width - relativeTo.width) / 2;
+						relativeTo.x = relativeTo2.x + Math.round((object.x - relativeTo2.x + relativeTo2.width - relativeTo.width) / 2);
 					}
 					else if(position == ACCESSORY_POSITION_LEFT && otherPosition == ACCESSORY_POSITION_RIGHT)
 					{
-						relativeTo.x = object.x + (relativeTo2.x - object.x + object.width - relativeTo.width) / 2;
+						relativeTo.x = object.x + Math.round((relativeTo2.x - object.x + object.width - relativeTo.width) / 2);
 					}
 					else if(position == ACCESSORY_POSITION_RIGHT && otherPosition == ACCESSORY_POSITION_RIGHT)
 					{
-						relativeTo2.x = relativeTo.x + (object.x - relativeTo.x + relativeTo.width - relativeTo2.width) / 2;
+						relativeTo2.x = relativeTo.x + Math.round((object.x - relativeTo.x + relativeTo.width - relativeTo2.width) / 2);
 					}
 					else if(position == ACCESSORY_POSITION_LEFT && otherPosition == ACCESSORY_POSITION_LEFT)
 					{
-						relativeTo2.x = object.x + (relativeTo.x - object.x + object.width - relativeTo2.width) / 2;
+						relativeTo2.x = object.x + Math.round((relativeTo.x - object.x + object.width - relativeTo2.width) / 2);
 					}
 					else if(position == ACCESSORY_POSITION_BOTTOM && otherPosition == ACCESSORY_POSITION_TOP)
 					{
-						relativeTo.y = relativeTo2.y + (object.y - relativeTo2.y + relativeTo2.height - relativeTo.height) / 2;
+						relativeTo.y = relativeTo2.y + Math.round((object.y - relativeTo2.y + relativeTo2.height - relativeTo.height) / 2);
 					}
 					else if(position == ACCESSORY_POSITION_TOP && otherPosition == ACCESSORY_POSITION_BOTTOM)
 					{
-						relativeTo.y = object.y + (relativeTo2.y - object.y + object.height - relativeTo.height) / 2;
+						relativeTo.y = object.y + Math.round((relativeTo2.y - object.y + object.height - relativeTo.height) / 2);
 					}
 					else if(position == ACCESSORY_POSITION_BOTTOM && otherPosition == ACCESSORY_POSITION_BOTTOM)
 					{
-						relativeTo2.y = relativeTo.y + (object.y - relativeTo.y + relativeTo.height - relativeTo2.height) / 2;
+						relativeTo2.y = relativeTo.y + Math.round((object.y - relativeTo.y + relativeTo.height - relativeTo2.height) / 2);
 					}
 					else if(position == ACCESSORY_POSITION_TOP && otherPosition == ACCESSORY_POSITION_TOP)
 					{
-						relativeTo2.y = object.y + (relativeTo.y - object.y + object.height - relativeTo2.height) / 2;
+						relativeTo2.y = object.y + Math.round((relativeTo.y - object.y + object.height - relativeTo2.height) / 2);
 					}
 				}
 			}
@@ -4177,9 +4210,9 @@ package feathers.controls.renderers
 				{
 					object.y = this.actualHeight - this._paddingBottom - object.height;
 				}
-				else
+				else //middle
 				{
-					object.y = this._paddingTop + (this.actualHeight - this._paddingTop - this._paddingBottom - object.height) / 2;
+					object.y = this._paddingTop + Math.round((this.actualHeight - this._paddingTop - this._paddingBottom - object.height) / 2);
 				}
 			}
 			else if(position == ACCESSORY_POSITION_TOP || position == ACCESSORY_POSITION_BOTTOM)
@@ -4192,9 +4225,9 @@ package feathers.controls.renderers
 				{
 					object.x = this.actualWidth - this._paddingRight - object.width;
 				}
-				else
+				else //center
 				{
-					object.x = this._paddingLeft + (this.actualWidth - this._paddingLeft - this._paddingRight - object.width) / 2;
+					object.x = this._paddingLeft + Math.round((this.actualWidth - this._paddingLeft - this._paddingRight - object.width) / 2);
 				}
 			}
 		}

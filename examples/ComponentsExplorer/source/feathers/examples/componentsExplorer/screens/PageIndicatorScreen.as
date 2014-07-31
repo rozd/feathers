@@ -18,20 +18,23 @@ package feathers.examples.componentsExplorer.screens
 	{
 		public function PageIndicatorScreen()
 		{
-			this.addEventListener(FeathersEventType.INITIALIZE, initializeHandler);
+			super();
 		}
 
 		private var _backButton:Button;
 		private var _pageIndicator:PageIndicator;
 
-		protected function initializeHandler(event:Event):void
+		override protected function initialize():void
 		{
+			//never forget to call super.initialize()
+			super.initialize();
+
 			this.layout = new AnchorLayout();
 
 			this._pageIndicator = new PageIndicator();
 			this._pageIndicator.pageCount = 5;
 			this._pageIndicator.addEventListener(Event.CHANGE, pageIndicator_changeHandler);
-			const pageIndicatorLayoutData:AnchorLayoutData = new AnchorLayoutData();
+			var pageIndicatorLayoutData:AnchorLayoutData = new AnchorLayoutData();
 			pageIndicatorLayoutData.left = 0;
 			pageIndicatorLayoutData.right = 0;
 			pageIndicatorLayoutData.verticalCenter = 0;

@@ -8,8 +8,10 @@ accordance with the terms of the accompanying license agreement.
 package feathers.controls
 {
 	import feathers.core.FeathersControl;
+	import feathers.core.ITextBaselineControl;
 	import feathers.core.ITextRenderer;
 	import feathers.core.PropertyProxy;
+	import feathers.skins.IStyleProvider;
 
 	import flash.geom.Point;
 
@@ -21,8 +23,13 @@ package feathers.controls
 	 * @see http://wiki.starling-framework.org/feathers/label
 	 * @see http://wiki.starling-framework.org/feathers/text-renderers
 	 */
-	public class Label extends FeathersControl
+	public class Label extends FeathersControl implements ITextBaselineControl
 	{
+		/**
+		 * @private
+		 */
+		private static const HELPER_POINT:Point = new Point();
+
 		/**
 		 * An alternate name to use with <code>Label</code> to allow a theme to
 		 * give it a larger style meant for headings. If a theme does not provide
@@ -30,7 +37,7 @@ package feathers.controls
 		 * to using the default label skin.
 		 *
 		 * <p>An alternate name should always be added to a component's
-		 * <code>nameList</code> before the component is added to the stage for
+		 * <code>styleNameList</code> before the component is added to the stage for
 		 * the first time. If it is added later, it will be ignored.</p>
 		 *
 		 * <p>In the following example, the heading style is applied to a label:</p>
@@ -41,7 +48,7 @@ package feathers.controls
 		 * label.styleNameList.add( Label.ALTERNATE_NAME_HEADING );
 		 * this.addChild( label );</listing>
 		 *
-		 * @see feathers.core.IFeathersControl#nameList
+		 * @see feathers.core.FeathersControl#styleNameList
 		 */
 		public static const ALTERNATE_NAME_HEADING:String = "feathers-heading-label";
 
@@ -52,7 +59,7 @@ package feathers.controls
 		 * automatically fall back to using the default label skin.
 		 *
 		 * <p>An alternate name should always be added to a component's
-		 * <code>nameList</code> before the component is added to the stage for
+		 * <code>styleNameList</code> before the component is added to the stage for
 		 * the first time. If it is added later, it will be ignored.</p>
 		 *
 		 * <p>In the following example, the detail style is applied to a label:</p>
@@ -63,20 +70,25 @@ package feathers.controls
 		 * label.styleNameList.add( Label.ALTERNATE_NAME_DETAIL );
 		 * this.addChild( label );</listing>
 		 *
-		 * @see feathers.core.IFeathersControl#nameList
+		 * @see feathers.core.FeathersControl#styleNameList
 		 */
 		public static const ALTERNATE_NAME_DETAIL:String = "feathers-detail-label";
 
 		/**
-		 * @private
+		 * The default <code>IStyleProvider</code> for all <code>Label</code>
+		 * components.
+		 *
+		 * @default null
+		 * @see feathers.core.FeathersControl#styleProvider
 		 */
-		private static const HELPER_POINT:Point = new Point();
+		public static var globalStyleProvider:IStyleProvider;
 
 		/**
 		 * Constructor.
 		 */
 		public function Label()
 		{
+			super();
 			this.isQuickHitAreaEnabled = true;
 		}
 
@@ -87,6 +99,14 @@ package feathers.controls
 		 * @see #textRendererFactory
 		 */
 		protected var textRenderer:ITextRenderer;
+
+		/**
+		 * @private
+		 */
+		override protected function get defaultStyleProvider():IStyleProvider
+		{
+			return Label.globalStyleProvider;
+		}
 
 		/**
 		 * @private
@@ -122,16 +142,15 @@ package feathers.controls
 		}
 
 		/**
-		 * @private
-		 */
-		protected var _baseline:Number = 0;
-
-		/**
-		 * The baseline value of the text.
+		 * The baseline measurement of the text, in pixels.
 		 */
 		public function get baseline():Number
 		{
-			return this._baseline;
+			if(!this.textRenderer)
+			{
+				return 0;
+			}
+			return this.textRenderer.y + this.textRenderer.baseline;
 		}
 
 		/**
@@ -261,11 +280,11 @@ package feathers.controls
 		 */
 		override protected function draw():void
 		{
-			const dataInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_DATA);
-			const stylesInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STYLES);
+			var dataInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_DATA);
+			var stylesInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STYLES);
 			var sizeInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_SIZE);
-			const stateInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STATE);
-			const textRendererInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_TEXT_RENDERER);
+			var stateInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STATE);
+			var textRendererInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_TEXT_RENDERER);
 
 			if(textRendererInvalid)
 			{
@@ -310,8 +329,8 @@ package feathers.controls
 		 */
 		protected function autoSizeIfNeeded():Boolean
 		{
-			const needsWidth:Boolean = isNaN(this.explicitWidth);
-			const needsHeight:Boolean = isNaN(this.explicitHeight);
+			var needsWidth:Boolean = this.explicitWidth != this.explicitWidth; //isNaN
+			var needsHeight:Boolean = this.explicitHeight != this.explicitHeight; //isNaN
 			if(!needsWidth && !needsHeight)
 			{
 				return false;
@@ -370,7 +389,7 @@ package feathers.controls
 				this.textRenderer = null;
 			}
 
-			const factory:Function = this._textRendererFactory != null ? this._textRendererFactory : FeathersControl.defaultTextRendererFactory;
+			var factory:Function = this._textRendererFactory != null ? this._textRendererFactory : FeathersControl.defaultTextRendererFactory;
 			this.textRenderer = ITextRenderer(factory());
 			this.addChild(DisplayObject(this.textRenderer));
 		}
@@ -397,14 +416,10 @@ package feathers.controls
 		 */
 		protected function refreshTextRendererStyles():void
 		{
-			const displayTextRenderer:DisplayObject = DisplayObject(this.textRenderer);
 			for(var propertyName:String in this._textRendererProperties)
 			{
-				if(displayTextRenderer.hasOwnProperty(propertyName))
-				{
-					var propertyValue:Object = this._textRendererProperties[propertyName];
-					displayTextRenderer[propertyName] = propertyValue;
-				}
+				var propertyValue:Object = this._textRendererProperties[propertyName];
+				this.textRenderer[propertyName] = propertyValue;
 			}
 		}
 
@@ -416,7 +431,6 @@ package feathers.controls
 			this.textRenderer.width = this.actualWidth;
 			this.textRenderer.height = this.actualHeight;
 			this.textRenderer.validate();
-			this._baseline = this.textRenderer.baseline;
 		}
 
 		/**

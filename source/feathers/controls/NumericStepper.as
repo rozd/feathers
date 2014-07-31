@@ -10,13 +10,18 @@ package feathers.controls
 	import feathers.core.FeathersControl;
 	import feathers.core.IFocusDisplayObject;
 	import feathers.core.PropertyProxy;
+	import feathers.events.ExclusiveTouch;
 	import feathers.events.FeathersEventType;
+	import feathers.skins.IStyleProvider;
 	import feathers.utils.math.clamp;
 	import feathers.utils.math.roundToNearest;
+	import feathers.utils.math.roundToPrecision;
 
 	import flash.events.TimerEvent;
 	import flash.ui.Keyboard;
 	import flash.utils.Timer;
+
+	import starling.display.DisplayObject;
 
 	import starling.events.Event;
 	import starling.events.KeyboardEvent;
@@ -82,26 +87,26 @@ package feathers.controls
 		protected static const INVALIDATION_FLAG_TEXT_INPUT_FACTORY:String = "textInputFactory";
 
 		/**
-		 * The default value added to the <code>nameList</code> of the decrement
+		 * The default value added to the <code>styleNameList</code> of the decrement
 		 * button.
 		 *
-		 * @see feathers.core.IFeathersControl#nameList
+		 * @see feathers.core.FeathersControl#styleNameList
 		 */
 		public static const DEFAULT_CHILD_NAME_DECREMENT_BUTTON:String = "feathers-numeric-stepper-decrement-button";
 
 		/**
-		 * The default value added to the <code>nameList</code> of the increment
+		 * The default value added to the <code>styleNameList</code> of the increment
 		 * button.
 		 *
-		 * @see feathers.core.IFeathersControl#nameList
+		 * @see feathers.core.FeathersControl#styleNameList
 		 */
 		public static const DEFAULT_CHILD_NAME_INCREMENT_BUTTON:String = "feathers-numeric-stepper-increment-button";
 
 		/**
-		 * The default value added to the <code>nameList</code> of the text
+		 * The default value added to the <code>styleNameList</code> of the text
 		 * input.
 		 *
-		 * @see feathers.core.IFeathersControl#nameList
+		 * @see feathers.core.FeathersControl#styleNameList
 		 */
 		public static const DEFAULT_CHILD_NAME_TEXT_INPUT:String = "feathers-numeric-stepper-text-input";
 
@@ -132,6 +137,15 @@ package feathers.controls
 		public static const BUTTON_LAYOUT_MODE_RIGHT_SIDE_VERTICAL:String = "rightSideVertical";
 
 		/**
+		 * The default <code>IStyleProvider</code> for all <code>NumericStepper</code>
+		 * components.
+		 *
+		 * @default null
+		 * @see feathers.core.FeathersControl#styleProvider
+		 */
+		public static var globalStyleProvider:IStyleProvider;
+
+		/**
 		 * @private
 		 */
 		protected static function defaultDecrementButtonFactory():Button
@@ -160,11 +174,12 @@ package feathers.controls
 		 */
 		public function NumericStepper()
 		{
+			super();
 			this.addEventListener(Event.REMOVED_FROM_STAGE, numericStepper_removedFromStageHandler);
 		}
 
 		/**
-		 * The value added to the <code>nameList</code> of the decrement button. This
+		 * The value added to the <code>styleNameList</code> of the decrement button. This
 		 * variable is <code>protected</code> so that sub-classes can customize
 		 * the decrement button name in their constructors instead of using the default
 		 * name defined by <code>DEFAULT_CHILD_NAME_DECREMENT_BUTTON</code>.
@@ -173,12 +188,12 @@ package feathers.controls
 		 * <code>customDecrementButtonName</code>.</p>
 		 *
 		 * @see #customDecrementButtonName
-		 * @see feathers.core.IFeathersControl#nameList
+		 * @see feathers.core.FeathersControl#styleNameList
 		 */
 		protected var decrementButtonName:String = DEFAULT_CHILD_NAME_DECREMENT_BUTTON;
 
 		/**
-		 * The value added to the <code>nameList</code> of the increment button. This
+		 * The value added to the <code>styleNameList</code> of the increment button. This
 		 * variable is <code>protected</code> so that sub-classes can customize
 		 * the increment button name in their constructors instead of using the default
 		 * name defined by <code>DEFAULT_CHILD_NAME_INCREMENT_BUTTON</code>.
@@ -187,12 +202,12 @@ package feathers.controls
 		 * <code>customIncrementButtonName</code>.</p>
 		 *
 		 * @see #customIncrementButtonName
-		 * @see feathers.core.IFeathersControl#nameList
+		 * @see feathers.core.FeathersControl#styleNameList
 		 */
 		protected var incrementButtonName:String = DEFAULT_CHILD_NAME_INCREMENT_BUTTON;
 
 		/**
-		 * The value added to the <code>nameList</code> of the text input. This
+		 * The value added to the <code>styleNameList</code> of the text input. This
 		 * variable is <code>protected</code> so that sub-classes can customize
 		 * the text input name in their constructors instead of using the default
 		 * name defined by <code>DEFAULT_CHILD_NAME_TEXT_INPUT</code>.
@@ -201,7 +216,7 @@ package feathers.controls
 		 * <code>customTextInputName</code>.</p>
 		 *
 		 * @see #customTextInputName
-		 * @see feathers.core.IFeathersControl#nameList
+		 * @see feathers.core.FeathersControl#styleNameList
 		 */
 		protected var textInputName:String = DEFAULT_CHILD_NAME_TEXT_INPUT;
 
@@ -240,6 +255,14 @@ package feathers.controls
 		/**
 		 * @private
 		 */
+		override protected function get defaultStyleProvider():IStyleProvider
+		{
+			return NumericStepper.globalStyleProvider;
+		}
+
+		/**
+		 * @private
+		 */
 		protected var _value:Number = 0;
 
 		/**
@@ -272,7 +295,9 @@ package feathers.controls
 		{
 			if(this._step != 0 && newValue != this._maximum && newValue != this._minimum)
 			{
-				newValue = roundToNearest(newValue, this._step);
+				//roundToPrecision helps us to avoid numbers like 1.00000000000000001
+				//caused by the inaccuracies of floating point math.
+				newValue = roundToPrecision(roundToNearest(newValue - this._minimum, this._step) + this._minimum, 10);
 			}
 			newValue = clamp(newValue, this._minimum, this._maximum);
 			if(this._value == newValue)
@@ -493,6 +518,84 @@ package feathers.controls
 		/**
 		 * @private
 		 */
+		protected var _buttonGap:Number = 0;
+
+		/**
+		 * The gap, in pixels, between the numeric stepper's increment and
+		 * decrement buttons when they are both positioned on the same side. If
+		 * the buttons are split between two sides, this value is not used.
+		 *
+		 * <p>In the following example, the gap between buttons is set to 20 pixels:</p>
+		 *
+		 * <listing version="3.0">
+		 * stepper.buttonLayoutMode = NumericStepper.BUTTON_LAYOUT_MODE_RIGHT_SIDE_VERTICAL;
+		 * stepper.buttonGap = 20;</listing>
+		 *
+		 * @default 0
+		 *
+		 * @see #textInputGap
+		 * @see #buttonLayoutMode
+		 */
+		public function get buttonGap():Number
+		{
+			return this._buttonGap;
+		}
+
+		/**
+		 * @private
+		 */
+		public function set buttonGap(value:Number):void
+		{
+			if(this._buttonGap == value)
+			{
+				return;
+			}
+			this._buttonGap = value;
+			this.invalidate(INVALIDATION_FLAG_STYLES);
+		}
+
+		/**
+		 * @private
+		 */
+		protected var _textInputGap:Number = 0;
+
+		/**
+		 * The gap, in pixels, between the numeric stepper's text input and its
+		 * buttons. If the buttons are split, this gap is used on both sides. If
+		 * the buttons both appear on the same side, the gap is used only on
+		 * that side.
+		 *
+		 * <p>In the following example, the gap between the text input and buttons is set to 20 pixels:</p>
+		 *
+		 * <listing version="3.0">
+		 * stepper.textInputGap = 20;</listing>
+		 *
+		 * @default 0
+		 *
+		 * @see #buttonGap
+		 * @see #buttonLayoutMode
+		 */
+		public function get textInputGap():Number
+		{
+			return this._textInputGap;
+		}
+
+		/**
+		 * @private
+		 */
+		public function set textInputGap(value:Number):void
+		{
+			if(this._textInputGap == value)
+			{
+				return;
+			}
+			this._textInputGap = value;
+			this.invalidate(INVALIDATION_FLAG_STYLES);
+		}
+
+		/**
+		 * @private
+		 */
 		protected var _decrementButtonFactory:Function;
 
 		/**
@@ -566,8 +669,7 @@ package feathers.controls
 		 * @default null
 		 *
 		 * @see #DEFAULT_CHILD_NAME_DECREMENT_BUTTON
-		 * @see feathers.core.FeathersControl#nameList
-		 * @see feathers.core.DisplayListWatcher
+		 * @see feathers.core.FeathersControl#styleNameList
 		 * @see #decrementButtonFactory
 		 * @see #decrementButtonProperties
 		 */
@@ -646,7 +748,7 @@ package feathers.controls
 			}
 			if(!(value is PropertyProxy))
 			{
-				const newValue:PropertyProxy = new PropertyProxy();
+				var newValue:PropertyProxy = new PropertyProxy();
 				for(var propertyName:String in value)
 				{
 					newValue[propertyName] = value[propertyName];
@@ -775,8 +877,7 @@ package feathers.controls
 		 * @default null
 		 *
 		 * @see #DEFAULT_CHILD_NAME_INCREMENT_BUTTON
-		 * @see feathers.core.FeathersControl#nameList
-		 * @see feathers.core.DisplayListWatcher
+		 * @see feathers.core.FeathersControl#styleNameList
 		 * @see #incrementButtonFactory
 		 * @see #incrementButtonProperties
 		 */
@@ -855,7 +956,7 @@ package feathers.controls
 			}
 			if(!(value is PropertyProxy))
 			{
-				const newValue:PropertyProxy = new PropertyProxy();
+				var newValue:PropertyProxy = new PropertyProxy();
 				for(var propertyName:String in value)
 				{
 					newValue[propertyName] = value[propertyName];
@@ -983,8 +1084,7 @@ package feathers.controls
 		 * @default null
 		 *
 		 * @see #DEFAULT_CHILD_NAME_TEXT_INPUT
-		 * @see feathers.core.FeathersControl#nameList
-		 * @see feathers.core.DisplayListWatcher
+		 * @see feathers.core.FeathersControl#styleNameList
 		 * @see #textInputFactory
 		 * @see #textInputProperties
 		 */
@@ -1062,7 +1162,7 @@ package feathers.controls
 			}
 			if(!(value is PropertyProxy))
 			{
-				const newValue:PropertyProxy = new PropertyProxy();
+				var newValue:PropertyProxy = new PropertyProxy();
 				for(var propertyName:String in value)
 				{
 					newValue[propertyName] = value[propertyName];
@@ -1086,14 +1186,14 @@ package feathers.controls
 		 */
 		override protected function draw():void
 		{
-			const dataInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_DATA);
-			const stylesInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STYLES);
+			var dataInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_DATA);
+			var stylesInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STYLES);
 			var sizeInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_SIZE);
-			const stateInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STATE);
-			const decrementButtonFactoryInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_DECREMENT_BUTTON_FACTORY);
-			const incrementButtonFactoryInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_INCREMENT_BUTTON_FACTORY);
-			const textInputFactoryInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_TEXT_INPUT_FACTORY);
-			const focusInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_FOCUS);
+			var stateInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STATE);
+			var decrementButtonFactoryInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_DECREMENT_BUTTON_FACTORY);
+			var incrementButtonFactoryInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_INCREMENT_BUTTON_FACTORY);
+			var textInputFactoryInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_TEXT_INPUT_FACTORY);
+			var focusInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_FOCUS);
 
 			if(decrementButtonFactoryInvalid)
 			{
@@ -1178,8 +1278,8 @@ package feathers.controls
 		 */
 		protected function autoSizeIfNeeded():Boolean
 		{
-			const needsWidth:Boolean = isNaN(this.explicitWidth);
-			const needsHeight:Boolean = isNaN(this.explicitHeight);
+			var needsWidth:Boolean = this.explicitWidth != this.explicitWidth; //isNaN
+			var needsHeight:Boolean = this.explicitHeight != this.explicitHeight; //isNaN
 			if(!needsWidth && !needsHeight)
 			{
 				return false;
@@ -1190,11 +1290,11 @@ package feathers.controls
 
 			this.decrementButton.validate();
 			this.incrementButton.validate();
-			const oldTextInputWidth:Number = this.textInput.width;
-			const oldTextInputHeight:Number = this.textInput.height;
+			var oldTextInputWidth:Number = this.textInput.width;
+			var oldTextInputHeight:Number = this.textInput.height;
 			if(this._buttonLayoutMode == BUTTON_LAYOUT_MODE_RIGHT_SIDE_VERTICAL)
 			{
-				const maxButtonWidth:Number = Math.max(this.decrementButton.width, this.incrementButton.width);
+				var maxButtonWidth:Number = Math.max(this.decrementButton.width, this.incrementButton.width);
 				this.textInput.minWidth = Math.max(0, this._minWidth - maxButtonWidth);
 				this.textInput.maxWidth = Math.max(0, this._maxWidth - maxButtonWidth);
 				this.textInput.width = Math.max(0, this.explicitWidth - maxButtonWidth)
@@ -1203,11 +1303,11 @@ package feathers.controls
 
 				if(needsWidth)
 				{
-					newWidth = this.textInput.width + maxButtonWidth;
+					newWidth = this.textInput.width + maxButtonWidth + this._textInputGap;
 				}
 				if(needsHeight)
 				{
-					newHeight = Math.max(this.textInput.height, this.decrementButton.height + this.incrementButton.height);
+					newHeight = Math.max(this.textInput.height, this.decrementButton.height + this._buttonGap + this.incrementButton.height);
 				}
 			}
 			else if(this._buttonLayoutMode == BUTTON_LAYOUT_MODE_SPLIT_VERTICAL)
@@ -1224,7 +1324,7 @@ package feathers.controls
 				}
 				if(needsHeight)
 				{
-					newHeight = this.decrementButton.height + this.textInput.height + this.incrementButton.height;
+					newHeight = this.decrementButton.height + this.textInput.height + this.incrementButton.height + 2 * this._textInputGap;
 				}
 			}
 			else //split horizontal
@@ -1237,7 +1337,7 @@ package feathers.controls
 
 				if(needsWidth)
 				{
-					newWidth = this.decrementButton.width + this.textInput.width + this.incrementButton.width;
+					newWidth = this.decrementButton.width + this.textInput.width + this.incrementButton.width + 2 * this._textInputGap;
 				}
 				if(needsHeight)
 				{
@@ -1255,7 +1355,12 @@ package feathers.controls
 		 */
 		protected function decrement():void
 		{
-			this.value -= this._step;
+			this.value = this._value - this._step;
+			if(this.textInput.isEditable)
+			{
+				this.validate();
+				this.textInput.selectRange(0, this.textInput.text.length);
+			}
 		}
 
 		/**
@@ -1263,7 +1368,38 @@ package feathers.controls
 		 */
 		protected function increment():void
 		{
-			this.value += this._step;
+			this.value = this._value + this._step;
+			if(this.textInput.isEditable)
+			{
+				this.validate();
+				this.textInput.selectRange(0, this.textInput.text.length);
+			}
+		}
+
+		/**
+		 * @private
+		 */
+		protected function toMinimum():void
+		{
+			this.value = this._minimum;
+			if(this.textInput.isEditable)
+			{
+				this.validate();
+				this.textInput.selectRange(0, this.textInput.text.length);
+			}
+		}
+
+		/**
+		 * @private
+		 */
+		protected function toMaximum():void
+		{
+			this.value = this._maximum;
+			if(this.textInput.isEditable)
+			{
+				this.validate();
+				this.textInput.selectRange(0, this.textInput.text.length);
+			}
 		}
 
 		/**
@@ -1285,8 +1421,8 @@ package feathers.controls
 				this.decrementButton = null;
 			}
 
-			const factory:Function = this._decrementButtonFactory != null ? this._decrementButtonFactory : defaultDecrementButtonFactory;
-			const decrementButtonName:String = this._customDecrementButtonName != null ? this._customDecrementButtonName : this.decrementButtonName;
+			var factory:Function = this._decrementButtonFactory != null ? this._decrementButtonFactory : defaultDecrementButtonFactory;
+			var decrementButtonName:String = this._customDecrementButtonName != null ? this._customDecrementButtonName : this.decrementButtonName;
 			this.decrementButton = Button(factory());
 			this.decrementButton.styleNameList.add(decrementButtonName);
 			this.decrementButton.addEventListener(TouchEvent.TOUCH, decrementButton_touchHandler);
@@ -1312,8 +1448,8 @@ package feathers.controls
 				this.incrementButton = null;
 			}
 
-			const factory:Function = this._incrementButtonFactory != null ? this._incrementButtonFactory : defaultIncrementButtonFactory;
-			const incrementButtonName:String = this._customIncrementButtonName != null ? this._customIncrementButtonName : this.incrementButtonName;
+			var factory:Function = this._incrementButtonFactory != null ? this._incrementButtonFactory : defaultIncrementButtonFactory;
+			var incrementButtonName:String = this._customIncrementButtonName != null ? this._customIncrementButtonName : this.incrementButtonName;
 			this.incrementButton = Button(factory());
 			this.incrementButton.styleNameList.add(incrementButtonName);
 			this.incrementButton.addEventListener(TouchEvent.TOUCH, incrementButton_touchHandler);
@@ -1339,8 +1475,8 @@ package feathers.controls
 				this.textInput = null;
 			}
 
-			const factory:Function = this._textInputFactory != null ? this._textInputFactory : defaultTextInputFactory;
-			const textInputName:String = this._customTextInputName != null ? this._customTextInputName : this.textInputName;
+			var factory:Function = this._textInputFactory != null ? this._textInputFactory : defaultTextInputFactory;
+			var textInputName:String = this._customTextInputName != null ? this._customTextInputName : this.textInputName;
 			this.textInput = TextInput(factory());
 			this.textInput.styleNameList.add(textInputName);
 			this.textInput.addEventListener(FeathersEventType.ENTER, textInput_enterHandler);
@@ -1356,11 +1492,8 @@ package feathers.controls
 		{
 			for(var propertyName:String in this._decrementButtonProperties)
 			{
-				if(this.decrementButton.hasOwnProperty(propertyName))
-				{
-					var propertyValue:Object = this._decrementButtonProperties[propertyName];
-					this.decrementButton[propertyName] = propertyValue;
-				}
+				var propertyValue:Object = this._decrementButtonProperties[propertyName];
+				this.decrementButton[propertyName] = propertyValue;
 			}
 			this.decrementButton.label = this._decrementButtonLabel;
 		}
@@ -1372,11 +1505,8 @@ package feathers.controls
 		{
 			for(var propertyName:String in this._incrementButtonProperties)
 			{
-				if(this.incrementButton.hasOwnProperty(propertyName))
-				{
-					var propertyValue:Object = this._incrementButtonProperties[propertyName];
-					this.incrementButton[propertyName] = propertyValue;
-				}
+				var propertyValue:Object = this._incrementButtonProperties[propertyName];
+				this.incrementButton[propertyName] = propertyValue;
 			}
 			this.incrementButton.label = this._incrementButtonLabel;
 		}
@@ -1388,11 +1518,8 @@ package feathers.controls
 		{
 			for(var propertyName:String in this._textInputProperties)
 			{
-				if(this.textInput.hasOwnProperty(propertyName))
-				{
-					var propertyValue:Object = this._textInputProperties[propertyName];
-					this.textInput[propertyName] = propertyValue;
-				}
+				var propertyValue:Object = this._textInputProperties[propertyName];
+				this.textInput[propertyName] = propertyValue;
 			}
 		}
 
@@ -1402,10 +1529,25 @@ package feathers.controls
 		protected function refreshTypicalText():void
 		{
 			var typicalText:String = "";
-			var characterCount:int = Math.max(this._minimum.toString().length, this._maximum.toString().length);
+			var maxCharactersBeforeDecimal:Number = Math.max(int(this._minimum).toString().length, int(this._maximum).toString().length, int(this._step).toString().length);
+
+			//roundToPrecision() helps us to avoid numbers like 1.00000000000000001
+			//caused by the inaccuracies of floating point math.
+			var maxCharactersAfterDecimal:Number = Math.max(roundToPrecision(this._minimum - int(this._minimum), 10).toString().length,
+				roundToPrecision(this._maximum - int(this._maximum), 10).toString().length,
+				roundToPrecision(this._step - int(this._step), 10).toString().length) - 2;
+			if(maxCharactersAfterDecimal < 0)
+			{
+				maxCharactersAfterDecimal = 0;
+			}
+			var characterCount:int = maxCharactersBeforeDecimal + maxCharactersAfterDecimal;
 			for(var i:int = 0; i < characterCount; i++)
 			{
 				typicalText += "0";
+			}
+			if(maxCharactersAfterDecimal > 0)
+			{
+				typicalText += ".";
 			}
 			this.textInput.typicalText = typicalText;
 		}
@@ -1417,23 +1559,23 @@ package feathers.controls
 		{
 			if(this._buttonLayoutMode == BUTTON_LAYOUT_MODE_RIGHT_SIDE_VERTICAL)
 			{
-				const buttonHeight:Number = this.actualHeight / 2;
+				var buttonHeight:Number = (this.actualHeight - this._buttonGap) / 2;
 				this.incrementButton.y = 0;
 				this.incrementButton.height = buttonHeight;
 				this.incrementButton.validate();
 
-				this.decrementButton.y = buttonHeight;
+				this.decrementButton.y = buttonHeight + this._buttonGap;
 				this.decrementButton.height = buttonHeight;
 				this.decrementButton.validate();
 
-				const buttonWidth:Number = Math.max(this.decrementButton.width, this.incrementButton.width);
-				const buttonX:Number = this.actualWidth - buttonWidth;
+				var buttonWidth:Number = Math.max(this.decrementButton.width, this.incrementButton.width);
+				var buttonX:Number = this.actualWidth - buttonWidth;
 				this.decrementButton.x = buttonX;
 				this.incrementButton.x = buttonX;
 
 				this.textInput.x = 0;
 				this.textInput.y = 0;
-				this.textInput.width = buttonX;
+				this.textInput.width = buttonX - this._textInputGap;
 				this.textInput.height = this.actualHeight;
 			}
 			else if(this._buttonLayoutMode == BUTTON_LAYOUT_MODE_SPLIT_VERTICAL)
@@ -1449,9 +1591,9 @@ package feathers.controls
 				this.decrementButton.y = this.actualHeight - this.decrementButton.height;
 
 				this.textInput.x = 0;
-				this.textInput.y = this.incrementButton.height;
+				this.textInput.y = this.incrementButton.height + this._textInputGap;
 				this.textInput.width = this.actualWidth;
-				this.textInput.height = Math.max(0, this.decrementButton.y - this.incrementButton.height - this.incrementButton.y);
+				this.textInput.height = Math.max(0, this.actualHeight - this.decrementButton.height - this.incrementButton.height - 2 * this._textInputGap);
 			}
 			else //split horizontal
 			{
@@ -1465,8 +1607,8 @@ package feathers.controls
 				this.incrementButton.validate();
 				this.incrementButton.x = this.actualWidth - this.incrementButton.width;
 
-				this.textInput.x = this.decrementButton.width;
-				this.textInput.width = this.incrementButton.x - this.textInput.x;
+				this.textInput.x = this.decrementButton.width + this._textInputGap;
+				this.textInput.width = this.actualWidth - this.decrementButton.width - this.incrementButton.width - 2 * this._textInputGap;
 				this.textInput.height = this.actualHeight;
 			}
 
@@ -1479,6 +1621,23 @@ package feathers.controls
 		 */
 		protected function startRepeatTimer(action:Function):void
 		{
+			if(this.touchPointID >= 0)
+			{
+				var exclusiveTouch:ExclusiveTouch = ExclusiveTouch.forStage(this.stage);
+				var claim:DisplayObject = exclusiveTouch.getClaim(this.touchPointID)
+				if(claim != this)
+				{
+					if(claim)
+					{
+						//already claimed by another display object
+						return;
+					}
+					else
+					{
+						exclusiveTouch.claimTouch(this.touchPointID, this);
+					}
+				}
+			}
 			this.currentRepeatAction = action;
 			if(this._repeatDelay > 0)
 			{
@@ -1493,6 +1652,26 @@ package feathers.controls
 					this._repeatTimer.delay = this._repeatDelay * 1000;
 				}
 				this._repeatTimer.start();
+			}
+		}
+
+		/**
+		 * @private
+		 */
+		protected function parseTextInputValue():void
+		{
+			var newValue:Number = parseFloat(this.textInput.text);
+			if(newValue == newValue) //!isNaN
+			{
+				this.value = newValue;
+				if(this.value != newValue && !this.isInvalid(INVALIDATION_FLAG_DATA))
+				{
+					//if the value setter modified the new value from the text
+					//input, and it returned because the modified value is equal
+					//to the current value, then we need to force invalidation
+					//so that the text input's text is accurate
+					this.invalidate(INVALIDATION_FLAG_DATA);
+				}
 			}
 		}
 
@@ -1541,11 +1720,7 @@ package feathers.controls
 		 */
 		protected function textInput_enterHandler(event:Event):void
 		{
-			const newValue:Number = parseFloat(this.textInput.text);
-			if(!isNaN(newValue))
-			{
-				this.value = newValue;
-			}
+			this.parseTextInputValue();
 		}
 
 		/**
@@ -1553,11 +1728,7 @@ package feathers.controls
 		 */
 		protected function textInput_focusOutHandler(event:Event):void
 		{
-			const newValue:Number = parseFloat(this.textInput.text);
-			if(!isNaN(newValue))
-			{
-				this.value = newValue;
-			}
+			this.parseTextInputValue();
 		}
 
 		/**
@@ -1639,19 +1810,19 @@ package feathers.controls
 		{
 			if(event.keyCode == Keyboard.HOME)
 			{
-				this.value = this._minimum;
+				this.toMinimum();
 			}
 			else if(event.keyCode == Keyboard.END)
 			{
-				this.value = this._maximum;
+				this.toMaximum();
 			}
 			else if(event.keyCode == Keyboard.UP)
 			{
-				this.value += this._step;
+				this.increment();
 			}
 			else if(event.keyCode == Keyboard.DOWN)
 			{
-				this.value -= this._step;
+				this.decrement();
 			}
 		}
 

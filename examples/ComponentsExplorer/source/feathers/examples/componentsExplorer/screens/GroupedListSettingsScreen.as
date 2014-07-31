@@ -12,6 +12,8 @@ package feathers.examples.componentsExplorer.screens
 	import feathers.layout.AnchorLayoutData;
 
 	import starling.display.DisplayObject;
+
+	import starling.display.DisplayObject;
 	import starling.events.Event;
 
 	[Event(name="complete",type="starling.events.Event")]
@@ -20,7 +22,7 @@ package feathers.examples.componentsExplorer.screens
 	{
 		public function GroupedListSettingsScreen()
 		{
-			this.addEventListener(FeathersEventType.INITIALIZE, initializeHandler);
+			super();
 		}
 
 		public var settings:GroupedListSettings;
@@ -32,8 +34,24 @@ package feathers.examples.componentsExplorer.screens
 		private var _isSelectableToggle:ToggleSwitch;
 		private var _hasElasticEdgesToggle:ToggleSwitch;
 
-		protected function initializeHandler(event:Event):void
+		override public function dispose():void
 		{
+			//icon and accessory display objects in the list's data provider
+			//won't be automatically disposed because feathers cannot know if
+			//they need to be used again elsewhere or not. we need to dispose
+			//them manually.
+			this._list.dataProvider.dispose(disposeItemAccessory);
+
+			//never forget to call super.dispose() because you don't want to
+			//create a memory leak!
+			super.dispose();
+		}
+
+		override protected function initialize():void
+		{
+			//never forget to call super.initialize()
+			super.initialize();
+
 			this.layout = new AnchorLayout();
 
 			this._stylePicker = new PickerList();
@@ -80,6 +98,11 @@ package feathers.examples.componentsExplorer.screens
 			];
 
 			this.backButtonHandler = this.onBackButton;
+		}
+
+		private function disposeItemAccessory(item:Object):void
+		{
+			DisplayObject(item.accessory).dispose();
 		}
 
 		private function onBackButton():void

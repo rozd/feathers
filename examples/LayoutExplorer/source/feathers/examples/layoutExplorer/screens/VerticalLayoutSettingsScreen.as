@@ -22,7 +22,6 @@ package feathers.examples.layoutExplorer.screens
 		public function VerticalLayoutSettingsScreen()
 		{
 			super();
-			this.addEventListener(FeathersEventType.INITIALIZE, initializeHandler);
 		}
 
 		public var settings:VerticalLayoutSettings;
@@ -39,8 +38,24 @@ package feathers.examples.layoutExplorer.screens
 		private var _horizontalAlignPicker:PickerList;
 		private var _verticalAlignPicker:PickerList;
 
-		protected function initializeHandler(event:Event):void
+		override public function dispose():void
 		{
+			//icon and accessory display objects in the list's data provider
+			//won't be automatically disposed because feathers cannot know if
+			//they need to be used again elsewhere or not. we need to dispose
+			//them manually.
+			this._list.dataProvider.dispose(disposeItemAccessory);
+
+			//never forget to call super.dispose() because you don't want to
+			//create a memory leak!
+			super.dispose();
+		}
+
+		override protected function initialize():void
+		{
+			//never forget to call super.initialize()
+			super.initialize();
+
 			this.layout = new AnchorLayout();
 
 			this._itemCountStepper = new NumericStepper();
@@ -138,6 +153,11 @@ package feathers.examples.layoutExplorer.screens
 			];
 
 			this.backButtonHandler = this.onBackButton;
+		}
+
+		private function disposeItemAccessory(item:Object):void
+		{
+			DisplayObject(item.accessory).dispose();
 		}
 
 		private function onBackButton():void

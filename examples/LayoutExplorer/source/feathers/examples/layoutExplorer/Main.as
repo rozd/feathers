@@ -47,21 +47,23 @@ package feathers.examples.layoutExplorer
 		public function Main()
 		{
 			super();
-			this.addEventListener(FeathersEventType.INITIALIZE, initializeHandler);
 		}
 
 		private var _navigator:ScreenNavigator;
 		private var _menu:MainMenuScreen;
 		private var _transitionManager:ScreenSlidingStackTransitionManager;
 
-		private function initializeHandler(event:Event):void
+		override protected function initialize():void
 		{
+			//never forget to call super.initialize()
+			super.initialize();
+
 			new MetalWorksMobileTheme();
 
 			this._navigator = new ScreenNavigator();
 			this.content = this._navigator;
 
-			const horizontalLayoutSettings:HorizontalLayoutSettings = new HorizontalLayoutSettings();
+			var horizontalLayoutSettings:HorizontalLayoutSettings = new HorizontalLayoutSettings();
 			this._navigator.addScreen(HORIZONTAL, new ScreenNavigatorItem(HorizontalLayoutScreen,
 			{
 				complete: MAIN_MENU,
@@ -78,7 +80,7 @@ package feathers.examples.layoutExplorer
 				settings: horizontalLayoutSettings
 			}));
 
-			const verticalLayoutSettings:VerticalLayoutSettings = new VerticalLayoutSettings();
+			var verticalLayoutSettings:VerticalLayoutSettings = new VerticalLayoutSettings();
 			this._navigator.addScreen(VERTICAL, new ScreenNavigatorItem(VerticalLayoutScreen,
 			{
 				complete: MAIN_MENU,
@@ -95,7 +97,7 @@ package feathers.examples.layoutExplorer
 				settings: verticalLayoutSettings
 			}));
 
-			const tiledRowsLayoutSettings:TiledRowsLayoutSettings = new TiledRowsLayoutSettings();
+			var tiledRowsLayoutSettings:TiledRowsLayoutSettings = new TiledRowsLayoutSettings();
 			this._navigator.addScreen(TILED_ROWS, new ScreenNavigatorItem(TiledRowsLayoutScreen,
 			{
 				complete: MAIN_MENU,
@@ -112,7 +114,7 @@ package feathers.examples.layoutExplorer
 				settings: tiledRowsLayoutSettings
 			}));
 
-			const tiledColumnsLayoutSettings:TiledColumnsLayoutSettings = new TiledColumnsLayoutSettings();
+			var tiledColumnsLayoutSettings:TiledColumnsLayoutSettings = new TiledColumnsLayoutSettings();
 			this._navigator.addScreen(TILED_COLUMNS, new ScreenNavigatorItem(TiledColumnsLayoutScreen,
 			{
 				complete: MAIN_MENU,
@@ -135,7 +137,8 @@ package feathers.examples.layoutExplorer
 			if(DeviceCapabilities.isTablet(Starling.current.nativeStage))
 			{
 				//we don't want the screens bleeding outside the navigator's
-				//bounds when a transition is active, so clip it.
+				//bounds on top of a drawer when a transition is active, so
+				//enable clipping.
 				this._navigator.clipContent = true;
 				this._menu = new MainMenuScreen();
 				for(var eventType:String in MAIN_MENU_EVENTS)
@@ -154,7 +157,7 @@ package feathers.examples.layoutExplorer
 
 		private function mainMenuEventHandler(event:Event):void
 		{
-			const screenName:String = MAIN_MENU_EVENTS[event.type];
+			var screenName:String = MAIN_MENU_EVENTS[event.type];
 			//because we're controlling the navigation externally, it doesn't
 			//make sense to transition or keep a history
 			this._transitionManager.clearStack();

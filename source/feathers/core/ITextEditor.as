@@ -147,7 +147,7 @@ package feathers.core
 	 * @see feathers.controls.TextInput
 	 * @see http://wiki.starling-framework.org/feathers/text-editors
 	 */
-	public interface ITextEditor extends IFeathersControl
+	public interface ITextEditor extends IFeathersControl, ITextBaselineControl
 	{
 		/**
 		 * The text displayed by the editor.
@@ -210,6 +210,18 @@ package feathers.core
 		 * @see #setFocus()
 		 */
 		function get setTouchFocusOnEndedPhase():Boolean;
+
+		/**
+		 * The index of the first character of the selection. If no text is
+		 * selected, then this is the value of the caret index.
+		 */
+		function get selectionBeginIndex():int;
+
+		/**
+		 * The index of the last character of the selection. If no text is
+		 * selected, then this is the value of the caret index.
+		 */
+		function get selectionEndIndex():int;
 
 		/**
 		 * Gives focus to the text editor. Includes an optional position which

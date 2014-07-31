@@ -20,7 +20,7 @@ package feathers.examples.youtube.screens
 	{
 		public function VideoDetailsScreen()
 		{
-			this.addEventListener(FeathersEventType.INITIALIZE, initializeHandler);
+			super();
 		}
 
 		private var _backButton:Button;
@@ -44,8 +44,11 @@ package feathers.examples.youtube.screens
 			this.invalidate(INVALIDATION_FLAG_DATA);
 		}
 
-		protected function initializeHandler(event:Event):void
+		override protected function initialize():void
 		{
+			//never forget to call super.initialize()
+			super.initialize();
+
 			this.layout = new AnchorLayout();
 
 			this._scrollText = new ScrollText();
@@ -76,7 +79,7 @@ package feathers.examples.youtube.screens
 
 		override protected function draw():void
 		{
-			const dataInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_DATA);
+			var dataInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_DATA);
 			if(dataInvalid)
 			{
 				if(this._model && this._model.selectedVideo)
