@@ -3,12 +3,14 @@ package feathers.examples.drawersExplorer.views
 	import feathers.controls.Check;
 	import feathers.controls.Label;
 	import feathers.controls.ScrollContainer;
-	import feathers.events.FeathersEventType;
+	import feathers.skins.IStyleProvider;
 
 	import starling.events.Event;
 
 	public class DrawerView extends ScrollContainer
 	{
+		public static var globalStyleProvider:IStyleProvider;
+
 		public static const CHANGE_DOCK_MODE_TO_NONE:String = "changeDockModeToNone";
 		public static const CHANGE_DOCK_MODE_TO_BOTH:String = "changeDockModeToBoth";
 
@@ -21,6 +23,11 @@ package feathers.examples.drawersExplorer.views
 		private var _title:String;
 		private var _titleLabel:Label;
 		private var _dockCheck:Check;
+
+		override protected function get defaultStyleProvider():IStyleProvider
+		{
+			return DrawerView.globalStyleProvider;
+		}
 
 		override protected function initialize():void
 		{

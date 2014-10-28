@@ -1,9 +1,7 @@
 package feathers.examples.componentsExplorer.screens
 {
-	import feathers.controls.Header;
 	import feathers.controls.List;
 	import feathers.controls.PanelScreen;
-	import feathers.controls.Screen;
 	import feathers.controls.ScreenNavigatorItem;
 	import feathers.controls.renderers.DefaultListItemRenderer;
 	import feathers.controls.renderers.IListItemRenderer;
@@ -15,7 +13,6 @@ package feathers.examples.componentsExplorer.screens
 	import feathers.system.DeviceCapabilities;
 
 	import starling.core.Starling;
-
 	import starling.events.Event;
 	import starling.textures.Texture;
 
@@ -65,6 +62,7 @@ package feathers.examples.componentsExplorer.screens
 		private var _list:List;
 
 		public var savedVerticalScrollPosition:Number = 0;
+		public var savedSelectedIndex:int = -1;
 
 		override protected function initialize():void
 		{
@@ -102,7 +100,6 @@ package feathers.examples.componentsExplorer.screens
 			this._list.clipContent = false;
 			this._list.autoHideBackground = true;
 			this._list.verticalScrollPosition = this.savedVerticalScrollPosition;
-			this._list.addEventListener(Event.CHANGE, list_changeHandler);
 
 			var itemRendererAccessorySourceFunction:Function = null;
 			if(!isTablet)
@@ -124,7 +121,14 @@ package feathers.examples.componentsExplorer.screens
 
 			if(isTablet)
 			{
+				this._list.addEventListener(Event.CHANGE, list_changeHandler);
 				this._list.selectedIndex = 0;
+				this._list.revealScrollBars();
+			}
+			else
+			{
+				this._list.selectedIndex = this.savedSelectedIndex;
+				this.owner.addEventListener(FeathersEventType.TRANSITION_COMPLETE, owner_transitionCompleteHandler);
 			}
 			this.addChild(this._list);
 		}
@@ -134,18 +138,35 @@ package feathers.examples.componentsExplorer.screens
 			return StandardIcons.listDrillDownAccessoryTexture;
 		}
 		
+		private function owner_transitionCompleteHandler(event:Event):void
+		{
+			this.owner.removeEventListener(FeathersEventType.TRANSITION_COMPLETE, owner_transitionCompleteHandler);
+
+			if(!DeviceCapabilities.isTablet(Starling.current.nativeStage))
+			{
+				this._list.selectedIndex = -1;
+				this._list.addEventListener(Event.CHANGE, list_changeHandler);
+			}
+			this._list.revealScrollBars();
+		}
+		
 		private function list_changeHandler(event:Event):void
 		{
-			//we're going to save the position of the list so that when the user
-			//navigates back to this screen, they won't need to scroll back to
-			//the same position manually
-
-			var screenItem:ScreenNavigatorItem = this._owner.getScreen(this.screenID);
-			if(!screenItem.properties)
+			if(!DeviceCapabilities.isTablet(Starling.current.nativeStage))
 			{
-				screenItem.properties = {};
+				var screenItem:ScreenNavigatorItem = this._owner.getScreen(this.screenID);
+				if(!screenItem.properties)
+				{
+					screenItem.properties = {};
+				}
+				//we're going to save the position of the list so that when the user
+				//navigates back to this screen, they won't need to scroll back to
+				//the same position manually
+				screenItem.properties.savedVerticalScrollPosition = this._list.verticalScrollPosition;
+				//we'll also save the selected index to temporarily highlight
+				//the previously selected item when transitioning back
+				screenItem.properties.savedSelectedIndex = this._list.selectedIndex;
 			}
-			screenItem.properties.savedVerticalScrollPosition = this._list.verticalScrollPosition;
 
 			var eventType:String = this._list.selectedItem.event as String;
 			this.dispatchEventWith(eventType);

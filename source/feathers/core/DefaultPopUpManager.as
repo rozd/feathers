@@ -7,7 +7,6 @@ accordance with the terms of the accompanying license agreement.
 */
 package feathers.core
 {
-	import feathers.core.FocusManager;
 	import feathers.events.FeathersEventType;
 
 	import flash.utils.Dictionary;
@@ -162,8 +161,8 @@ package feathers.core
 			}
 
 			this._popUps.push(popUp);
-			this._root.addChild(popUp);
 			popUp.addEventListener(Event.REMOVED_FROM_STAGE, popUp_removedFromStageHandler);
+			this._root.addChild(popUp);
 
 			if(this._popUps.length == 1)
 			{

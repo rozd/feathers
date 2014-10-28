@@ -18,7 +18,6 @@ package feathers.examples.gallery
 	import starling.animation.Tween;
 	import starling.core.Starling;
 	import starling.display.Image;
-	import starling.display.Quad;
 	import starling.display.Sprite;
 	import starling.events.Event;
 	import starling.events.ResizeEvent;
@@ -121,7 +120,6 @@ package feathers.examples.gallery
 			var listLayout:HorizontalLayout = new HorizontalLayout();
 			listLayout.verticalAlign = HorizontalLayout.VERTICAL_ALIGN_JUSTIFY;
 			listLayout.hasVariableItemDimensions = true;
-			listLayout.manageVisibility = true;
 
 			this.list = new List();
 			this.list.styleNameList.add(THUMBNAIL_LIST_NAME);

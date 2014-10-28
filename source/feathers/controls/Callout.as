@@ -197,6 +197,41 @@ package feathers.controls
 		protected static const FUZZY_CONTENT_DIMENSIONS_PADDING:Number = 0.000001;
 
 		/**
+		 * Quickly sets all stage padding properties to the same value. The
+		 * <code>stagePadding</code> getter always returns the value of
+		 * <code>stagePaddingTop</code>, but the other padding values may be
+		 * different.
+		 *
+		 * <p>The following example gives the stage 20 pixels of padding on all
+		 * sides:</p>
+		 *
+		 * <listing version="3.0">
+		 * Callout.stagePadding = 20;</listing>
+		 *
+		 * @default 0
+		 *
+		 * @see #stagePaddingTop
+		 * @see #stagePaddingRight
+		 * @see #stagePaddingBottom
+		 * @see #stagePaddingLeft
+		 */
+		public static function get stagePadding():Number
+		{
+			return Callout.stagePaddingTop;
+		}
+
+		/**
+		 * @private
+		 */
+		public static function set stagePadding(value:Number):void
+		{
+			Callout.stagePaddingTop = value;
+			Callout.stagePaddingRight = value;
+			Callout.stagePaddingBottom = value;
+			Callout.stagePaddingLeft = value;
+		}
+
+		/**
 		 * The padding between a callout and the top edge of the stage when the
 		 * callout is positioned automatically. May be ignored if the callout
 		 * is too big for the stage.
@@ -1604,7 +1639,6 @@ package feathers.controls
 		 */
 		override protected function initialize():void
 		{
-			this.stage.addEventListener(TouchEvent.TOUCH, stage_touchHandler);
 			this.addEventListener(Event.REMOVED_FROM_STAGE, callout_removedFromStageHandler);
 		}
 
@@ -1682,8 +1716,8 @@ package feathers.controls
 			{
 				result = new Point();
 			}
-			var needsWidth:Boolean = this.explicitWidth != this.explicitWidth; //isNaN
-			var needsHeight:Boolean = this.explicitHeight != this.explicitHeight; //isNaN
+			var needsWidth:Boolean = this.explicitWidth !== this.explicitWidth; //isNaN
+			var needsHeight:Boolean = this.explicitHeight !== this.explicitHeight; //isNaN
 			if(!needsWidth && !needsHeight)
 			{
 				result.x = this.explicitWidth;
@@ -1701,7 +1735,7 @@ package feathers.controls
 			if(needsWidth)
 			{
 				newWidth = this._content.width + this._paddingLeft + this._paddingRight;
-				if(this._originalBackgroundWidth == this._originalBackgroundWidth) //!isNaN
+				if(this._originalBackgroundWidth === this._originalBackgroundWidth) //!isNaN
 				{
 					newWidth = Math.max(this._originalBackgroundWidth, newWidth);
 				}
@@ -1729,7 +1763,7 @@ package feathers.controls
 			if(needsHeight)
 			{
 				newHeight = this._content.height + this._paddingTop + this._paddingBottom;
-				if(this._originalBackgroundHeight == this._originalBackgroundHeight) //!isNaN
+				if(this._originalBackgroundHeight === this._originalBackgroundHeight) //!isNaN
 				{
 					newHeight = Math.max(this._originalBackgroundHeight, newHeight);
 				}
@@ -1911,6 +1945,7 @@ package feathers.controls
 			var priority:int = -getDisplayObjectDepthFromStage(this);
 			Starling.current.nativeStage.addEventListener(KeyboardEvent.KEY_DOWN, callout_nativeStage_keyDownHandler, false, priority, true);
 
+			this.stage.addEventListener(TouchEvent.TOUCH, stage_touchHandler);
 			//to avoid touch events bubbling up to the callout and causing it to
 			//close immediately, we wait one frame before allowing it to close
 			//based on touches.

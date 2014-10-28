@@ -70,7 +70,7 @@ package feathers.controls.supportClasses
 			{
 				return;
 			}
-			if(value != value) //isNaN
+			if(value !== value) //isNaN
 			{
 				throw new ArgumentError("minVisibleWidth cannot be NaN");
 			}
@@ -91,7 +91,7 @@ package feathers.controls.supportClasses
 			{
 				return;
 			}
-			if(value != value) //isNaN
+			if(value !== value) //isNaN
 			{
 				throw new ArgumentError("maxVisibleWidth cannot be NaN");
 			}
@@ -111,7 +111,7 @@ package feathers.controls.supportClasses
 		public function set visibleWidth(value:Number):void
 		{
 			if(this.explicitVisibleWidth == value ||
-				(value != value && this.explicitVisibleWidth != this.explicitVisibleWidth)) //isNaN
+				(value !== value && this.explicitVisibleWidth !== this.explicitVisibleWidth)) //isNaN
 			{
 				return;
 			}
@@ -132,7 +132,7 @@ package feathers.controls.supportClasses
 			{
 				return;
 			}
-			if(value != value) //isNaN
+			if(value !== value) //isNaN
 			{
 				throw new ArgumentError("minVisibleHeight cannot be NaN");
 			}
@@ -153,7 +153,7 @@ package feathers.controls.supportClasses
 			{
 				return;
 			}
-			if(value != value) //isNaN
+			if(value !== value) //isNaN
 			{
 				throw new ArgumentError("maxVisibleHeight cannot be NaN");
 			}
@@ -173,7 +173,7 @@ package feathers.controls.supportClasses
 		public function set visibleHeight(value:Number):void
 		{
 			if(this.explicitVisibleHeight == value ||
-				(value != value && this.explicitVisibleHeight != this.explicitVisibleHeight)) //isNaN
+				(value !== value && this.explicitVisibleHeight !== this.explicitVisibleHeight)) //isNaN
 			{
 				return;
 			}
@@ -905,7 +905,20 @@ package feathers.controls.supportClasses
 			}
 
 			var displayIndex:int = this.locationToDisplayIndex(groupIndex, itemIndex);
-			return this._layout.getScrollPositionForIndex(displayIndex, this._layoutItems, 0, 0, this.actualVisibleWidth, this.actualVisibleHeight, result);
+			return this._layout.getScrollPositionForIndex(displayIndex, this._layoutItems,
+				0, 0, this.actualVisibleWidth, this.actualVisibleHeight, result);
+		}
+
+		public function getNearestScrollPositionForIndex(groupIndex:int, itemIndex:int, result:Point = null):Point
+		{
+			if(!result)
+			{
+				result = new Point();
+			}
+
+			var displayIndex:int = this.locationToDisplayIndex(groupIndex, itemIndex);
+			return this._layout.getNearestScrollPositionForIndex(displayIndex, this._horizontalScrollPosition,
+				this._verticalScrollPosition, this._layoutItems, 0, 0, this.actualVisibleWidth, this.actualVisibleHeight, result);
 		}
 
 		override public function dispose():void
@@ -1041,7 +1054,7 @@ package feathers.controls.supportClasses
 				var renderer:DisplayObject = DisplayObject(this._activeItemRenderers[i]);
 				if(renderer is IFeathersControl)
 				{
-					FeathersControl(renderer).isEnabled = this._isEnabled;
+					IFeathersControl(renderer).isEnabled = this._isEnabled;
 				}
 			}
 			if(this._activeFirstItemRenderers)
@@ -1052,7 +1065,7 @@ package feathers.controls.supportClasses
 					renderer = DisplayObject(this._activeFirstItemRenderers[i]);
 					if(renderer is IFeathersControl)
 					{
-						FeathersControl(renderer).isEnabled = this._isEnabled;
+						IFeathersControl(renderer).isEnabled = this._isEnabled;
 					}
 				}
 			}
@@ -1064,7 +1077,7 @@ package feathers.controls.supportClasses
 					renderer = DisplayObject(this._activeLastItemRenderers[i]);
 					if(renderer is IFeathersControl)
 					{
-						FeathersControl(renderer).isEnabled = this._isEnabled;
+						IFeathersControl(renderer).isEnabled = this._isEnabled;
 					}
 				}
 			}
@@ -1076,7 +1089,7 @@ package feathers.controls.supportClasses
 					renderer = DisplayObject(this._activeSingleItemRenderers[i]);
 					if(renderer is IFeathersControl)
 					{
-						FeathersControl(renderer).isEnabled = this._isEnabled;
+						IFeathersControl(renderer).isEnabled = this._isEnabled;
 					}
 				}
 			}
@@ -1086,7 +1099,7 @@ package feathers.controls.supportClasses
 				renderer = DisplayObject(this._activeHeaderRenderers[i]);
 				if(renderer is IFeathersControl)
 				{
-					FeathersControl(renderer).isEnabled = this._isEnabled;
+					IFeathersControl(renderer).isEnabled = this._isEnabled;
 				}
 			}
 			rendererCount = this._activeFooterRenderers.length;
@@ -1095,7 +1108,7 @@ package feathers.controls.supportClasses
 				renderer = DisplayObject(this._activeFooterRenderers[i]);
 				if(renderer is IFeathersControl)
 				{
-					FeathersControl(renderer).isEnabled = this._isEnabled;
+					IFeathersControl(renderer).isEnabled = this._isEnabled;
 				}
 			}
 		}
@@ -1125,7 +1138,7 @@ package feathers.controls.supportClasses
 			var newTypicalItemIsInDataProvider:Boolean = false;
 			var typicalItem:Object = this._typicalItem;
 			var groupCount:int = 0;
-			var firstGroupLength:int = 0;
+			var typicalGroupLength:int = 0;
 			var typicalItemGroupIndex:int = 0;
 			var typicalItemItemIndex:int = 0;
 			if(this._dataProvider)
@@ -1135,11 +1148,15 @@ package feathers.controls.supportClasses
 					groupCount = this._dataProvider.getLength();
 					if(groupCount > 0)
 					{
-						firstGroupLength = this._dataProvider.getLength(0);
-						if(firstGroupLength > 0)
+						for(var i:int = 0; i < groupCount; i++)
 						{
-							newTypicalItemIsInDataProvider = true;
-							typicalItem = this._dataProvider.getItemAt(0, 0);
+							typicalGroupLength = this._dataProvider.getLength(i);
+							if(typicalGroupLength > 0)
+							{
+								newTypicalItemIsInDataProvider = true;
+								typicalItem = this._dataProvider.getItemAt(i, 0);
+								break;
+							}
 						}
 					}
 				}
@@ -1160,7 +1177,7 @@ package feathers.controls.supportClasses
 				var isFirst:Boolean = false;
 				var isSingle:Boolean = false;
 				var typicalItemRenderer:IGroupedListItemRenderer;
-				if(hasCustomSingleItemRenderer && firstGroupLength == 1)
+				if(hasCustomSingleItemRenderer && typicalGroupLength == 1)
 				{
 					if(this._singleItemRendererMap)
 					{
@@ -1168,7 +1185,7 @@ package feathers.controls.supportClasses
 					}
 					isSingle = true;
 				}
-				else if(hasCustomFirstItemRenderer && firstGroupLength > 1)
+				else if(hasCustomFirstItemRenderer && typicalGroupLength > 1)
 				{
 					if(this._firstItemRendererMap)
 					{
@@ -1691,7 +1708,7 @@ package feathers.controls.supportClasses
 							{
 								//see comments in findRendererForItem()
 								headerOrFooterRenderer.data = null;
-								headerOrFooterRenderer.data = item;
+								headerOrFooterRenderer.data = header;
 							}
 							this._activeHeaderRenderers.push(headerOrFooterRenderer);
 							this._inactiveHeaderRenderers.splice(this._inactiveHeaderRenderers.indexOf(headerOrFooterRenderer), 1);
@@ -1760,7 +1777,7 @@ package feathers.controls.supportClasses
 							{
 								//see comments in findRendererForItem()
 								headerOrFooterRenderer.data = null;
-								headerOrFooterRenderer.data = item;
+								headerOrFooterRenderer.data = footer;
 							}
 							this._activeFooterRenderers.push(headerOrFooterRenderer);
 							this._inactiveFooterRenderers.splice(this._inactiveFooterRenderers.indexOf(headerOrFooterRenderer), 1);

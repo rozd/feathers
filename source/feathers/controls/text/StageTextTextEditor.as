@@ -34,6 +34,7 @@ package feathers.controls.text
 
 	import starling.core.RenderSupport;
 	import starling.core.Starling;
+	import starling.display.DisplayObject;
 	import starling.display.Image;
 	import starling.events.Event;
 	import starling.textures.ConcreteTexture;
@@ -222,6 +223,10 @@ package feathers.controls.text
 		 */
 		override public function set x(value:Number):void
 		{
+			if(super.x == value)
+			{
+				return;
+			}
 			super.x = value;
 			//we need to know when the position changes to change the position
 			//of the StageText instance.
@@ -233,7 +238,13 @@ package feathers.controls.text
 		 */
 		override public function set y(value:Number):void
 		{
+			if(super.y == value)
+			{
+				return;
+			}
 			super.y = value;
+			//we need to know when the position changes to change the position
+			//of the StageText instance.
 			this.invalidate(INVALIDATION_FLAG_POSITION);
 		}
 
@@ -1112,8 +1123,8 @@ package feathers.controls.text
 
 			if(this.textSnapshot)
 			{
-				this.textSnapshot.x = Math.round(HELPER_MATRIX.tx) - HELPER_MATRIX.tx;
-				this.textSnapshot.y = Math.round(HELPER_MATRIX.ty) - HELPER_MATRIX.ty;
+				this.textSnapshot.x = Math.round(HELPER_MATRIX.tx) - HELPER_MATRIX.tx - desktopGutterPositionOffset;
+				this.textSnapshot.y = Math.round(HELPER_MATRIX.ty) - HELPER_MATRIX.ty - desktopGutterPositionOffset;
 			}
 
 			super.render(support, parentAlpha);
@@ -1124,6 +1135,10 @@ package feathers.controls.text
 		 */
 		public function setFocus(position:Point = null):void
 		{
+			if(this.stage && !this.stageText.stage)
+			{
+				this.stageText.stage = Starling.current.nativeStage;
+			}
 			if(this.stageText && this._stageTextIsComplete)
 			{
 				if(position)
@@ -1183,10 +1198,6 @@ package feathers.controls.text
 					this._pendingSelectionBeginIndex = this._pendingSelectionEndIndex = -1;
 				}
 				this.stageText.visible = true;
-				if(!this.stageText.stage)
-				{
-					this.stageText.stage = Starling.current.nativeStage;
-				}
 				this.stageText.assignFocus();
 			}
 			else
@@ -1235,8 +1246,8 @@ package feathers.controls.text
 				result = new Point();
 			}
 
-			var needsWidth:Boolean = this.explicitWidth != this.explicitWidth; //isNaN
-			var needsHeight:Boolean = this.explicitHeight != this.explicitHeight; //isNaN
+			var needsWidth:Boolean = this.explicitWidth !== this.explicitWidth; //isNaN
+			var needsHeight:Boolean = this.explicitHeight !== this.explicitHeight; //isNaN
 			if(!needsWidth && !needsHeight)
 			{
 				result.x = this.explicitWidth;
@@ -1355,8 +1366,8 @@ package feathers.controls.text
 				result = new Point();
 			}
 
-			var needsWidth:Boolean = this.explicitWidth != this.explicitWidth; //isNaN
-			var needsHeight:Boolean = this.explicitHeight != this.explicitHeight; //isNaN
+			var needsWidth:Boolean = this.explicitWidth !== this.explicitWidth; //isNaN
+			var needsHeight:Boolean = this.explicitHeight !== this.explicitHeight; //isNaN
 
 			this._measureTextField.autoSize = TextFieldAutoSize.LEFT;
 
@@ -1374,11 +1385,18 @@ package feathers.controls.text
 				}
 			}
 
+			//the +4 is accounting for the TextField gutter
 			this._measureTextField.width = newWidth + 4;
 			var newHeight:Number = this.explicitHeight;
 			if(needsHeight)
 			{
-				newHeight = this._measureTextField.textHeight;
+				//since we're measuring with TextField, but rendering with
+				//StageText, we're using height instead of textHeight here to be
+				//sure that the measured size is on the larger side, in case the
+				//rendered size is actually bigger than textHeight
+				//if only StageText had an API for text measurement, we wouldn't
+				//be in this mess...
+				newHeight = this._measureTextField.height;
 				if(newHeight < this._minHeight)
 				{
 					newHeight = this._minHeight;
@@ -1393,8 +1411,9 @@ package feathers.controls.text
 
 			//put the width and height back just in case we measured without
 			//a full validation
+			//the +4 is accounting for the TextField gutter
 			this._measureTextField.width = this.actualWidth + 4;
-			this._measureTextField.height = this.actualHeight + 4;
+			this._measureTextField.height = this.actualHeight;
 
 			result.x = newWidth;
 			result.y = newHeight;
@@ -1457,8 +1476,8 @@ package feathers.controls.text
 		 */
 		protected function autoSizeIfNeeded():Boolean
 		{
-			var needsWidth:Boolean = this.explicitWidth != this.explicitWidth; //isNaN
-			var needsHeight:Boolean = this.explicitHeight != this.explicitHeight; //isNaN
+			var needsWidth:Boolean = this.explicitWidth !== this.explicitWidth; //isNaN
+			var needsHeight:Boolean = this.explicitHeight !== this.explicitHeight; //isNaN
 			if(!needsWidth && !needsHeight)
 			{
 				return false;
@@ -1473,6 +1492,12 @@ package feathers.controls.text
 		 */
 		protected function refreshMeasureProperties():void
 		{
+			var nativeScaleFactor:Number = 1;
+			if(Starling.current.supportHighResolutions)
+			{
+				nativeScaleFactor = Starling.current.nativeStage.contentsScaleFactor;
+			}
+			
 			this._measureTextField.displayAsPassword = this._displayAsPassword;
 			this._measureTextField.maxChars = this._maxChars;
 			this._measureTextField.restrict = this._restrict;
@@ -1482,7 +1507,7 @@ package feathers.controls.text
 			format.color = this._color;
 			format.font = this._fontFamily;
 			format.italic = this._fontPosture == FontPosture.ITALIC;
-			format.size = this._fontSize;
+			format.size = this._fontSize * nativeScaleFactor;
 			format.bold = this._fontWeight == FontWeight.BOLD;
 			var alignValue:String = this._textAlign;
 			if(alignValue == TextFormatAlign.START)
@@ -1603,20 +1628,46 @@ package feathers.controls.text
 		 */
 		protected function refreshSnapshot():void
 		{
+			//StageText's stage property cannot be null when we call
+			//drawViewPortToBitmapData()
+			if(this.stage && !this.stageText.stage)
+			{
+				this.stageText.stage = Starling.current.nativeStage;
+			}
+			if(!this.stageText.stage)
+			{
+				//we need to keep a flag active so that the snapshot will be
+				//refreshed after the text editor is added to the stage
+				this.invalidate(INVALIDATION_FLAG_DATA);
+				return;
+			}
 			var viewPort:Rectangle = this.stageText.viewPort;
 			if(viewPort.width == 0 || viewPort.height == 0)
 			{
 				return;
 			}
-
+			var nativeScaleFactor:Number = 1;
+			if(Starling.current.supportHighResolutions)
+			{
+				nativeScaleFactor = Starling.current.nativeStage.contentsScaleFactor;
+			}
 			//StageText sucks because it requires that the BitmapData's width
 			//and height exactly match its view port width and height.
-			var bitmapData:BitmapData = new BitmapData(viewPort.width, viewPort.height, true, 0x00ff00ff);
-			this.stageText.drawViewPortToBitmapData(bitmapData);
-			if(this._stageTextIsTextField)
+			//(may be doubled on Retina Mac) 
+			try
 			{
-				HELPER_POINT.setTo(0, 0);
-				bitmapData.copyPixels(bitmapData, new Rectangle(2, 2, bitmapData.width, bitmapData.height), HELPER_POINT);
+				var bitmapData:BitmapData = new BitmapData(viewPort.width * nativeScaleFactor, viewPort.height * nativeScaleFactor, true, 0x00ff00ff);
+				this.stageText.drawViewPortToBitmapData(bitmapData);
+			} 
+			catch(error:Error) 
+			{
+				//drawing stage text to the bitmap data at double size may fail
+				//on runtime versions less than 15, so fall back to using a
+				//snapshot that is half size. it's not ideal, but better than
+				//nothing.
+				bitmapData.dispose();
+				bitmapData = new BitmapData(viewPort.width, viewPort.height, true, 0x00ff00ff);
+				this.stageText.drawViewPortToBitmapData(bitmapData);
 			}
 
 			var newTexture:Texture;
@@ -1648,6 +1699,11 @@ package feathers.controls.text
 			this.getTransformationMatrix(this.stage, HELPER_MATRIX);
 			this.textSnapshot.scaleX = 1 / matrixToScaleX(HELPER_MATRIX);
 			this.textSnapshot.scaleY = 1 / matrixToScaleY(HELPER_MATRIX);
+			if(nativeScaleFactor > 1 && bitmapData.width == viewPort.width)
+			{
+				this.textSnapshot.scaleX *= nativeScaleFactor;
+				this.textSnapshot.scaleY *= nativeScaleFactor;
+			}
 			bitmapData.dispose();
 			this._needsNewTexture = false;
 		}
@@ -1662,10 +1718,6 @@ package feathers.controls.text
 			if(!stageTextViewPort)
 			{
 				stageTextViewPort = new Rectangle();
-			}
-			if(!this.stageText.stage)
-			{
-				this.stageText.stage = Starling.current.nativeStage;
 			}
 
 			HELPER_POINT.x = HELPER_POINT.y = 0;
@@ -1690,13 +1742,13 @@ package feathers.controls.text
 			stageTextViewPort.y = Math.round(starlingViewPort.y + HELPER_POINT.y * scaleFactor);
 			var viewPortWidth:Number = Math.round((this.actualWidth + desktopGutterDimensionsOffset) * scaleFactor * globalScaleX);
 			if(viewPortWidth < 1 ||
-				viewPortWidth != viewPortWidth) //isNaN
+				viewPortWidth !== viewPortWidth) //isNaN
 			{
 				viewPortWidth = 1;
 			}
 			var viewPortHeight:Number = Math.round((this.actualHeight + desktopGutterDimensionsOffset) * scaleFactor * globalScaleY);
 			if(viewPortHeight < 1 ||
-				viewPortHeight != viewPortHeight) //isNaN
+				viewPortHeight !== viewPortHeight) //isNaN
 			{
 				viewPortHeight = 1;
 			}
@@ -1704,8 +1756,9 @@ package feathers.controls.text
 			stageTextViewPort.height = viewPortHeight;
 			this.stageText.viewPort = stageTextViewPort;
 
+			//the +4 is accounting for the TextField gutter
 			this._measureTextField.width = this.actualWidth + 4;
-			this._measureTextField.height = this.actualHeight + 4;
+			this._measureTextField.height = this.actualHeight;
 		}
 
 		/**
@@ -1804,6 +1857,7 @@ package feathers.controls.text
 		protected function stageText_focusInHandler(event:FocusEvent):void
 		{
 			this._stageTextHasFocus = true;
+			this.addEventListener(starling.events.Event.ENTER_FRAME, hasFocus_enterFrameHandler);
 			if(this.textSnapshot)
 			{
 				this.textSnapshot.visible = false;
@@ -1827,6 +1881,31 @@ package feathers.controls.text
 			this.invalidate(INVALIDATION_FLAG_DATA);
 			this.invalidate(INVALIDATION_FLAG_SKIN);
 			this.dispatchEventWith(FeathersEventType.FOCUS_OUT);
+		}
+
+		/**
+		 * @private
+		 */
+		protected function hasFocus_enterFrameHandler(event:starling.events.Event):void
+		{
+			if(this._stageTextHasFocus)
+			{
+				var target:DisplayObject = this;
+				do
+				{
+					if(!target.hasVisibleArea)
+					{
+						this.stageText.stage.focus = null;
+						break;
+					}
+					target = target.parent;
+				}
+				while(target)
+			}
+			else
+			{
+				this.removeEventListener(starling.events.Event.ENTER_FRAME, hasFocus_enterFrameHandler);
+			}
 		}
 
 		/**

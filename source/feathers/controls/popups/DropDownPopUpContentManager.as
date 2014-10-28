@@ -33,6 +33,11 @@ package feathers.controls.popups
 	/**
 	 * @inheritDoc
 	 */
+	[Event(name="open",type="starling.events.Event")]
+
+	/**
+	 * @inheritDoc
+	 */
 	[Event(name="close",type="starling.events.Event")]
 
 	/**
@@ -66,6 +71,27 @@ package feathers.controls.popups
 		}
 
 		/**
+		 * @private
+		 */
+		protected var _gap:Number = 0;
+
+		/**
+		 * The space, in pixels, between the source and the pop-up.
+		 */
+		public function get gap():Number
+		{
+			return this._gap;
+		}
+
+		/**
+		 * @private
+		 */
+		public function set gap(value:Number):void
+		{
+			this._gap = value;
+		}
+
+		/**
 		 * @inheritDoc
 		 */
 		public function open(content:DisplayObject, source:DisplayObject):void
@@ -82,6 +108,7 @@ package feathers.controls.popups
 			{
 				this.content.addEventListener(FeathersEventType.RESIZE, content_resizeHandler);
 			}
+			this.content.addEventListener(Event.REMOVED_FROM_STAGE, content_removedFromStageHandler);
 			this.layout();
 			var stage:Stage = Starling.current.stage;
 			stage.addEventListener(TouchEvent.TOUCH, stage_touchHandler);
@@ -91,6 +118,7 @@ package feathers.controls.popups
 			//display list have a chance to cancel the event first.
 			var priority:int = -getDisplayObjectDepthFromStage(this.content);
 			Starling.current.nativeStage.addEventListener(KeyboardEvent.KEY_DOWN, nativeStage_keyDownHandler, false, priority, true);
+			this.dispatchEventWith(Event.OPEN);
 		}
 
 		/**
@@ -102,17 +130,22 @@ package feathers.controls.popups
 			{
 				return;
 			}
+			var content:DisplayObject = this.content;
+			this.content = null;
+			this.source = null;
 			var stage:Stage = Starling.current.stage;
 			stage.removeEventListener(TouchEvent.TOUCH, stage_touchHandler);
 			stage.removeEventListener(ResizeEvent.RESIZE, stage_resizeHandler);
 			Starling.current.nativeStage.removeEventListener(KeyboardEvent.KEY_DOWN, nativeStage_keyDownHandler);
-			if(this.content is IFeathersControl)
+			if(content is IFeathersControl)
 			{
-				this.content.removeEventListener(FeathersEventType.RESIZE, content_resizeHandler);
+				content.removeEventListener(FeathersEventType.RESIZE, content_resizeHandler);
 			}
-			PopUpManager.removePopUp(this.content);
-			this.content = null;
-			this.source = null;
+			content.removeEventListener(Event.REMOVED_FROM_STAGE, content_removedFromStageHandler);
+			if(content.parent)
+			{
+				content.removeFromParent(false);
+			}
 			this.dispatchEventWith(Event.CLOSE);
 		}
 
@@ -164,14 +197,14 @@ package feathers.controls.popups
 				validationQueue.advanceTime(0);
 			}
 
-			var downSpace:Number = (stage.stageHeight - this.content.height) - (globalOrigin.y + globalOrigin.height);
+			var downSpace:Number = (stage.stageHeight - this.content.height) - (globalOrigin.y + globalOrigin.height + this._gap);
 			if(downSpace >= 0)
 			{
 				layoutBelow(globalOrigin);
 				return;
 			}
 
-			var upSpace:Number = globalOrigin.y - this.content.height;
+			var upSpace:Number = globalOrigin.y - this._gap - this.content.height;
 			if(upSpace >= 0)
 			{
 				layoutAbove(globalOrigin);
@@ -220,7 +253,7 @@ package feathers.controls.popups
 				xPosition = 0;
 			}
 			this.content.x = xPosition;
-			this.content.y = globalOrigin.y - this.content.height;
+			this.content.y = globalOrigin.y - this.content.height - this._gap;
 		}
 
 		/**
@@ -239,7 +272,7 @@ package feathers.controls.popups
 				xPosition = 0;
 			}
 			this.content.x = xPosition;
-			this.content.y = globalOrigin.y + globalOrigin.height;
+			this.content.y = globalOrigin.y + globalOrigin.height + this._gap;
 		}
 
 		/**
@@ -248,6 +281,14 @@ package feathers.controls.popups
 		protected function content_resizeHandler(event:Event):void
 		{
 			this.layout();
+		}
+
+		/**
+		 * @private
+		 */
+		protected function content_removedFromStageHandler(event:Event):void
+		{
+			this.close();
 		}
 
 		/**

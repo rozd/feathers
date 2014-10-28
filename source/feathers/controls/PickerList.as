@@ -14,15 +14,65 @@ package feathers.controls
 	import feathers.core.FeathersControl;
 	import feathers.core.IFocusDisplayObject;
 	import feathers.core.IToggle;
-	import feathers.core.IToggle;
 	import feathers.core.PropertyProxy;
 	import feathers.data.ListCollection;
 	import feathers.events.FeathersEventType;
 	import feathers.skins.IStyleProvider;
 	import feathers.system.DeviceCapabilities;
 
+	import flash.ui.Keyboard;
+
 	import starling.core.Starling;
 	import starling.events.Event;
+	import starling.events.EventDispatcher;
+	import starling.events.KeyboardEvent;
+	import starling.events.Touch;
+	import starling.events.TouchEvent;
+	import starling.events.TouchPhase;
+
+	/**
+	 * Dispatched when the pop-up list is opened.
+	 *
+	 * <p>The properties of the event object have the following values:</p>
+	 * <table class="innertable">
+	 * <tr><th>Property</th><th>Value</th></tr>
+	 * <tr><td><code>bubbles</code></td><td>false</td></tr>
+	 * <tr><td><code>currentTarget</code></td><td>The Object that defines the
+	 *   event listener that handles the event. For example, if you use
+	 *   <code>myButton.addEventListener()</code> to register an event listener,
+	 *   myButton is the value of the <code>currentTarget</code>.</td></tr>
+	 * <tr><td><code>data</code></td><td>null</td></tr>
+	 * <tr><td><code>target</code></td><td>The Object that dispatched the event;
+	 *   it is not always the Object listening for the event. Use the
+	 *   <code>currentTarget</code> property to always access the Object
+	 *   listening for the event.</td></tr>
+	 * </table>
+	 *
+	 * @eventType starling.events.Event.OPEN
+	 */
+	[Event(name="open",type="starling.events.Event")]
+
+	/**
+	 * Dispatched when the pop-up list is closed.
+	 *
+	 * <p>The properties of the event object have the following values:</p>
+	 * <table class="innertable">
+	 * <tr><th>Property</th><th>Value</th></tr>
+	 * <tr><td><code>bubbles</code></td><td>false</td></tr>
+	 * <tr><td><code>currentTarget</code></td><td>The Object that defines the
+	 *   event listener that handles the event. For example, if you use
+	 *   <code>myButton.addEventListener()</code> to register an event listener,
+	 *   myButton is the value of the <code>currentTarget</code>.</td></tr>
+	 * <tr><td><code>data</code></td><td>null</td></tr>
+	 * <tr><td><code>target</code></td><td>The Object that dispatched the event;
+	 *   it is not always the Object listening for the event. Use the
+	 *   <code>currentTarget</code> property to always access the Object
+	 *   listening for the event.</td></tr>
+	 * </table>
+	 *
+	 * @eventType starling.events.Event.CLOSE
+	 */
+	[Event(name="close",type="starling.events.Event")]
 
 	/**
 	 * Dispatched when the selected item changes.
@@ -530,7 +580,19 @@ package feathers.controls
 			{
 				return;
 			}
+			if(this._popUpContentManager is EventDispatcher)
+			{
+				var dispatcher:EventDispatcher = EventDispatcher(this._popUpContentManager);
+				dispatcher.removeEventListener(Event.OPEN, popUpContentManager_openHandler);
+				dispatcher.removeEventListener(Event.CLOSE, popUpContentManager_closeHandler);
+			}
 			this._popUpContentManager = value;
+			if(this._popUpContentManager is EventDispatcher)
+			{
+				dispatcher = EventDispatcher(this._popUpContentManager);
+				dispatcher.addEventListener(Event.OPEN, popUpContentManager_openHandler);
+				dispatcher.addEventListener(Event.CLOSE, popUpContentManager_closeHandler);
+			}
 			this.invalidate(INVALIDATION_FLAG_STYLES);
 		}
 
@@ -964,9 +1026,16 @@ package feathers.controls
 				return;
 			}
 			this._toggleButtonOnOpenAndClose = value;
-			if(!this._toggleButtonOnOpenAndClose && this.button is IToggle)
+			if(this.button is IToggle)
 			{
-				IToggle(this.button).isSelected = false;
+				if(this._toggleButtonOnOpenAndClose && this._popUpContentManager.isOpen)
+				{
+					IToggle(this.button).isSelected = true;
+				}
+				else
+				{
+					IToggle(this.button).isSelected = false;
+				}
 			}
 		}
 
@@ -1026,6 +1095,16 @@ package feathers.controls
 		protected var _buttonHasFocus:Boolean = false;
 
 		/**
+		 * @private
+		 */
+		protected var _buttonTouchPointID:int = -1;
+
+		/**
+		 * @private
+		 */
+		protected var _listIsOpenOnTouchBegan:Boolean = false;
+
+		/**
 		 * Opens the pop-up list, if it isn't already open.
 		 */
 		public function openList():void
@@ -1046,12 +1125,8 @@ package feathers.controls
 			this.list.validate();
 			if(this._focusManager)
 			{
-				if(this._buttonHasFocus)
-				{
-					this.button.dispatchEventWith(FeathersEventType.FOCUS_OUT);
-					this._buttonHasFocus = false;
-				}
 				this._focusManager.focus = this.list;
+				this.stage.addEventListener(KeyboardEvent.KEY_UP, stage_keyUpHandler);
 				this.list.addEventListener(FeathersEventType.FOCUS_OUT, list_focusOutHandler);
 			}
 		}
@@ -1072,11 +1147,11 @@ package feathers.controls
 				return;
 			}
 			this._isCloseListPending = false;
-			if(this._focusManager)
-			{
-				this.list.removeEventListener(FeathersEventType.FOCUS_OUT, list_focusOutHandler);
-			}
 			this.list.validate();
+			//don't clean up anything from openList() in closeList(). The list
+			//may be closed by removing it from the PopUpManager, which would
+			//result in closeList() never being called.
+			//instead, clean up in the Event.REMOVED_FROM_STAGE listener.
 			this._popUpContentManager.close();
 		}
 		
@@ -1171,11 +1246,11 @@ package feathers.controls
 				//explicit dimensions aren't set.
 				//set this before buttonProperties is used because it might
 				//contain width or height changes.
-				if(this.explicitWidth != this.explicitWidth) //isNaN
+				if(this.explicitWidth !== this.explicitWidth) //isNaN
 				{
 					this.button.width = NaN;
 				}
-				if(this.explicitHeight != this.explicitHeight) //isNaN
+				if(this.explicitHeight !== this.explicitHeight) //isNaN
 				{
 					this.button.height = NaN;
 				}
@@ -1221,7 +1296,7 @@ package feathers.controls
 
 			sizeInvalid = this.autoSizeIfNeeded() || sizeInvalid;
 
-			if(buttonFactoryInvalid || sizeInvalid || selectionInvalid)
+			if(buttonFactoryInvalid || stylesInvalid || sizeInvalid || selectionInvalid)
 			{
 				this.layout();
 			}
@@ -1247,8 +1322,8 @@ package feathers.controls
 		 */
 		protected function autoSizeIfNeeded():Boolean
 		{
-			var needsWidth:Boolean = this.explicitWidth != this.explicitWidth; //isNaN
-			var needsHeight:Boolean = this.explicitHeight != this.explicitHeight; //isNaN
+			var needsWidth:Boolean = this.explicitWidth !== this.explicitWidth; //isNaN
+			var needsHeight:Boolean = this.explicitHeight !== this.explicitHeight; //isNaN
 			if(!needsWidth && !needsHeight)
 			{
 				return false;
@@ -1258,8 +1333,8 @@ package feathers.controls
 			var buttonHeight:Number;
 			if(this._typicalItem)
 			{
-				if(this._typicalItemWidth != this._typicalItemWidth || //isNaN
-					this._typicalItemHeight != this._typicalItemHeight) //isNaN
+				if(this._typicalItemWidth !== this._typicalItemWidth || //isNaN
+					this._typicalItemHeight !== this._typicalItemHeight) //isNaN
 				{
 					var oldWidth:Number = this.button.width;
 					var oldHeight:Number = this.button.height;
@@ -1290,7 +1365,7 @@ package feathers.controls
 			var newHeight:Number = this.explicitHeight;
 			if(needsWidth)
 			{
-				if(buttonWidth == buttonWidth) //!isNaN
+				if(buttonWidth === buttonWidth) //!isNaN
 				{
 					newWidth = buttonWidth;
 				}
@@ -1301,7 +1376,7 @@ package feathers.controls
 			}
 			if(needsHeight)
 			{
-				if(buttonHeight == buttonHeight) //!isNaN
+				if(buttonHeight === buttonHeight) //!isNaN
 				{
 					newHeight = buttonHeight;
 				}
@@ -1336,7 +1411,13 @@ package feathers.controls
 			var factory:Function = this._buttonFactory != null ? this._buttonFactory : defaultButtonFactory;
 			var buttonName:String = this._customButtonName != null ? this._customButtonName : this.buttonName;
 			this.button = Button(factory());
+			if(this.button is ToggleButton)
+			{
+				//we'll control the value of isSelected manually
+				ToggleButton(this.button).isToggle = false;
+			}
 			this.button.styleNameList.add(buttonName);
+			this.button.addEventListener(TouchEvent.TOUCH, button_touchHandler);
 			this.button.addEventListener(Event.TRIGGERED, button_triggeredHandler);
 			this.addChild(this.button);
 		}
@@ -1365,11 +1446,11 @@ package feathers.controls
 			var factory:Function = this._listFactory != null ? this._listFactory : defaultListFactory;
 			var listName:String = this._customListName != null ? this._customListName : this.listName;
 			this.list = List(factory());
+			this.list.focusOwner = this;
 			this.list.styleNameList.add(listName);
 			this.list.addEventListener(Event.CHANGE, list_changeHandler);
 			this.list.addEventListener(FeathersEventType.RENDERER_ADD, list_rendererAddHandler);
 			this.list.addEventListener(FeathersEventType.RENDERER_REMOVE, list_rendererRemoveHandler);
-			this.list.addEventListener(Event.ADDED_TO_STAGE, list_addedToStageHandler);
 			this.list.addEventListener(Event.REMOVED_FROM_STAGE, list_removedFromStageHandler);
 		}
 		
@@ -1469,12 +1550,47 @@ package feathers.controls
 		{
 			this.invalidate(INVALIDATION_FLAG_STYLES);
 		}
+
+		/**
+		 * @private
+		 */
+		protected function button_touchHandler(event:TouchEvent):void
+		{
+			if(this._buttonTouchPointID >= 0)
+			{
+				var touch:Touch = event.getTouch(this.button, TouchPhase.ENDED, this._buttonTouchPointID);
+				if(!touch)
+				{
+					return;
+				}
+				this._buttonTouchPointID = -1;
+				//the button will dispatch Event.TRIGGERED before this touch
+				//listener is called, so it is safe to clear this flag.
+				//we're clearing it because Event.TRIGGERED may also be
+				//dispatched after keyboard input.
+				this._listIsOpenOnTouchBegan = false;
+			}
+			else
+			{
+				touch = event.getTouch(this.button, TouchPhase.BEGAN);
+				if(!touch)
+				{
+					return;
+				}
+				this._buttonTouchPointID = touch.id;
+				this._listIsOpenOnTouchBegan = this._popUpContentManager.isOpen;
+			}
+		}
 		
 		/**
 		 * @private
 		 */
 		protected function button_triggeredHandler(event:Event):void
 		{
+			if(this._focusManager && this._listIsOpenOnTouchBegan)
+			{
+				return;
+			}
 			if(this._popUpContentManager.isOpen)
 			{
 				this.closeList();
@@ -1514,13 +1630,25 @@ package feathers.controls
 		/**
 		 * @private
 		 */
-		protected function list_addedToStageHandler(event:Event):void
+		protected function popUpContentManager_openHandler(event:Event):void
 		{
-			if(!this._toggleButtonOnOpenAndClose || !(this.button is IToggle))
+			if(this._toggleButtonOnOpenAndClose && this.button is IToggle)
 			{
-				return;
+				IToggle(this.button).isSelected = true;
 			}
-			IToggle(this.button).isSelected = true;
+			this.dispatchEventWith(Event.OPEN);
+		}
+
+		/**
+		 * @private
+		 */
+		protected function popUpContentManager_closeHandler(event:Event):void
+		{
+			if(this._toggleButtonOnOpenAndClose && this.button is IToggle)
+			{
+				IToggle(this.button).isSelected = false;
+			}
+			this.dispatchEventWith(Event.CLOSE);
 		}
 
 		/**
@@ -1528,11 +1656,11 @@ package feathers.controls
 		 */
 		protected function list_removedFromStageHandler(event:Event):void
 		{
-			if(!this._toggleButtonOnOpenAndClose || !(this.button is IToggle))
+			if(this._focusManager)
 			{
-				return;
+				this.list.stage.removeEventListener(KeyboardEvent.KEY_UP, stage_keyUpHandler);
+				this.list.removeEventListener(FeathersEventType.FOCUS_OUT, list_focusOutHandler);
 			}
-			IToggle(this.button).isSelected = false;
 		}
 
 		/**
@@ -1557,6 +1685,21 @@ package feathers.controls
 				return;
 			}
 			this.closeList();
+		}
+
+		/**
+		 * @private
+		 */
+		protected function stage_keyUpHandler(event:KeyboardEvent):void
+		{
+			if(!this._popUpContentManager.isOpen)
+			{
+				return;
+			}
+			if(event.keyCode == Keyboard.ENTER)
+			{
+				this.closeList();
+			}
 		}
 	}
 }

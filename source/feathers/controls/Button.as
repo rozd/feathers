@@ -29,9 +29,10 @@ package feathers.controls
 	import starling.events.TouchPhase;
 
 	/**
-	 * Dispatched when the button is released while the touch is still
-	 * within the button's bounds (a tap or click that should trigger the
-	 * button).
+	 * Dispatched when the the user taps or clicks the button. The touch must
+	 * remain within the bounds of the button on release to register as a tap
+	 * or a click. If focus management is enabled, the button may also be
+	 * triggered by pressing the spacebar while the button has focus.
 	 *
 	 * <p>The properties of the event object have the following values:</p>
 	 * <table class="innertable">
@@ -2062,8 +2063,8 @@ package feathers.controls
 		 */
 		protected function autoSizeIfNeeded():Boolean
 		{
-			var needsWidth:Boolean = this.explicitWidth != this.explicitWidth; //isNaN
-			var needsHeight:Boolean = this.explicitHeight != this.explicitHeight; //isNaN
+			var needsWidth:Boolean = this.explicitWidth !== this.explicitWidth; //isNaN
+			var needsHeight:Boolean = this.explicitHeight !== this.explicitHeight; //isNaN
 			if(!needsWidth && !needsHeight)
 			{
 				return false;
@@ -2106,7 +2107,7 @@ package feathers.controls
 					newWidth = HELPER_POINT.x;
 				}
 				newWidth += this._paddingLeft + this._paddingRight;
-				if(newWidth != newWidth) //isNaN
+				if(newWidth !== newWidth) //isNaN
 				{
 					newWidth = this._originalSkinWidth;
 					if(newWidth != newWidth)
@@ -2114,7 +2115,7 @@ package feathers.controls
 						newWidth = 0;
 					}
 				}
-				else if(this._originalSkinWidth == this._originalSkinWidth) //!isNaN
+				else if(this._originalSkinWidth === this._originalSkinWidth) //!isNaN
 				{
 					if(this._originalSkinWidth > newWidth)
 					{
@@ -2159,7 +2160,7 @@ package feathers.controls
 						newHeight = 0;
 					}
 				}
-				else if(this._originalSkinHeight == this._originalSkinHeight) //!isNaN
+				else if(this._originalSkinHeight === this._originalSkinHeight) //!isNaN
 				{
 					if(this._originalSkinHeight > newHeight)
 					{
@@ -2240,8 +2241,8 @@ package feathers.controls
 				}
 			}
 			if(this.currentSkin &&
-				(this._originalSkinWidth != this._originalSkinWidth || //isNaN
-				this._originalSkinHeight != this._originalSkinHeight))
+				(this._originalSkinWidth !== this._originalSkinWidth || //isNaN
+				this._originalSkinHeight !== this._originalSkinHeight))
 			{
 				if(this.currentSkin is IValidating)
 				{
@@ -2398,7 +2399,7 @@ package feathers.controls
 			if(forMeasurement)
 			{
 				calculatedWidth = this.explicitWidth;
-				if(calculatedWidth != calculatedWidth) //isNaN
+				if(calculatedWidth !== calculatedWidth) //isNaN
 				{
 					calculatedWidth = this._maxWidth;
 				}
@@ -2631,6 +2632,19 @@ package feathers.controls
 			super.focusOutHandler(event);
 			this.stage.removeEventListener(KeyboardEvent.KEY_DOWN, stage_keyDownHandler);
 			this.stage.removeEventListener(KeyboardEvent.KEY_UP, stage_keyUpHandler);
+
+			if(this.touchPointID >= 0)
+			{
+				this.touchPointID = -1;
+				if(this._isEnabled)
+				{
+					this.currentState = STATE_UP;
+				}
+				else
+				{
+					this.currentState = STATE_DISABLED;
+				}
+			}
 		}
 
 		/**

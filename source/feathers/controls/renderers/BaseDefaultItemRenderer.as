@@ -14,6 +14,7 @@ package feathers.controls.renderers
 	import feathers.controls.text.BitmapFontTextRenderer;
 	import feathers.core.FeathersControl;
 	import feathers.core.IFeathersControl;
+	import feathers.core.IFocusContainer;
 	import feathers.core.ITextRenderer;
 	import feathers.core.IValidating;
 	import feathers.core.PropertyProxy;
@@ -32,7 +33,7 @@ package feathers.controls.renderers
 	/**
 	 * An abstract class for item renderer implementations.
 	 */
-	public class BaseDefaultItemRenderer extends ToggleButton
+	public class BaseDefaultItemRenderer extends ToggleButton implements IFocusContainer
 	{
 		/**
 		 * The default value added to the <code>styleNameList</code> of the icon
@@ -247,6 +248,31 @@ package feathers.controls.renderers
 		 * @see feathers.core.FeathersControl#styleNameList
 		 */
 		protected var accessoryLabelName:String = DEFAULT_CHILD_NAME_ACCESSORY_LABEL;
+
+		/**
+		 * @private
+		 */
+		protected var _isChildFocusEnabled:Boolean = true;
+
+		/**
+		 * @copy feathers.core.IFocusContainer#isChildFocusEnabled
+		 *
+		 * @default true
+		 *
+		 * @see #isFocusEnabled
+		 */
+		public function get isChildFocusEnabled():Boolean
+		{
+			return this._isEnabled && this._isChildFocusEnabled;
+		}
+
+		/**
+		 * @private
+		 */
+		public function set isChildFocusEnabled(value:Boolean):void
+		{
+			this._isChildFocusEnabled = value;
+		}
 
 		/**
 		 * @private
@@ -674,8 +700,8 @@ package feathers.controls.renderers
 		 *
 		 * @default BaseDefaultItemRenderer.LAYOUT_ORDER_LABEL_ICON_ACCESSORY
 		 *
-		 * @see LAYOUT_ORDER_LABEL_ICON_ACCESSORY
-		 * @see LAYOUT_ORDER_LABEL_ACCESSORY_ICON
+		 * @see #LAYOUT_ORDER_LABEL_ICON_ACCESSORY
+		 * @see #LAYOUT_ORDER_LABEL_ACCESSORY_ICON
 		 * @see #accessoryPosition
 		 * @see #iconPosition
 		 */
@@ -3116,8 +3142,8 @@ package feathers.controls.renderers
 		 */
 		override protected function autoSizeIfNeeded():Boolean
 		{
-			var needsWidth:Boolean = this.explicitWidth != this.explicitWidth; //isNaN
-			var needsHeight:Boolean = this.explicitHeight != this.explicitHeight; //isNaN
+			var needsWidth:Boolean = this.explicitWidth !== this.explicitWidth; //isNaN
+			var needsHeight:Boolean = this.explicitHeight !== this.explicitHeight; //isNaN
 			if(!needsWidth && !needsHeight)
 			{
 				return false;
@@ -3151,15 +3177,15 @@ package feathers.controls.renderers
 					newWidth = this.addAccessoryWidth(newWidth);
 				}
 				newWidth += this._paddingLeft + this._paddingRight;
-				if(newWidth != newWidth) //isNaN
+				if(newWidth !== newWidth) //isNaN
 				{
 					newWidth = this._originalSkinWidth;
-					if(newWidth != newWidth) //isNaN
+					if(newWidth !== newWidth) //isNaN
 					{
 						newWidth = 0;
 					}
 				}
-				else if(this._originalSkinWidth == this._originalSkinWidth) //!isNaN
+				else if(this._originalSkinWidth === this._originalSkinWidth) //!isNaN
 				{
 					if(this._originalSkinWidth > newWidth)
 					{
@@ -3186,15 +3212,15 @@ package feathers.controls.renderers
 					newHeight = this.addAccessoryHeight(newHeight);
 				}
 				newHeight += this._paddingTop + this._paddingBottom;
-				if(newHeight != newHeight) //isNaN
+				if(newHeight !== newHeight) //isNaN
 				{
 					newHeight = this._originalSkinHeight;
-					if(newHeight != newHeight) //isNaN
+					if(newHeight !== newHeight) //isNaN
 					{
 						newHeight = 0;
 					}
 				}
-				else if(this._originalSkinHeight == this._originalSkinHeight) //!isNaN
+				else if(this._originalSkinHeight === this._originalSkinHeight) //!isNaN
 				{
 					if(this._originalSkinHeight > newHeight)
 					{
@@ -3217,12 +3243,12 @@ package feathers.controls.renderers
 				return width;
 			}
 			var iconWidth:Number = this.currentIcon.width;
-			if(iconWidth != iconWidth) //isNaN
+			if(iconWidth !== iconWidth) //isNaN
 			{
 				return width;
 			}
 
-			var hasPreviousItem:Boolean = width == width; //!isNaN
+			var hasPreviousItem:Boolean = width === width; //!isNaN
 			if(!hasPreviousItem)
 			{
 				width = 0;
@@ -3258,12 +3284,12 @@ package feathers.controls.renderers
 				return width;
 			}
 			var accessoryWidth:Number = this.accessory.width;
-			if(accessoryWidth != accessoryWidth) //isNaN
+			if(accessoryWidth !== accessoryWidth) //isNaN
 			{
 				return width;
 			}
 
-			var hasPreviousItem:Boolean = width == width; //!isNaN;
+			var hasPreviousItem:Boolean = width === width; //!isNaN;
 			if(!hasPreviousItem)
 			{
 				width = 0;
@@ -3274,13 +3300,13 @@ package feathers.controls.renderers
 				if(hasPreviousItem)
 				{
 					var adjustedAccessoryGap:Number = this._accessoryGap;
-					if(adjustedAccessoryGap != adjustedAccessoryGap) //isNaN
+					if(adjustedAccessoryGap !== adjustedAccessoryGap) //isNaN
 					{
 						adjustedAccessoryGap = this._gap;
 					}
 					if(adjustedAccessoryGap == Number.POSITIVE_INFINITY)
 					{
-						if(this._minAccessoryGap != this._minAccessoryGap) //isNaN
+						if(this._minAccessoryGap !== this._minAccessoryGap) //isNaN
 						{
 							adjustedAccessoryGap = this._minGap;
 						}
@@ -3311,12 +3337,12 @@ package feathers.controls.renderers
 				return height;
 			}
 			var iconHeight:Number = this.currentIcon.height;
-			if(iconHeight != iconHeight) //isNaN
+			if(iconHeight !== iconHeight) //isNaN
 			{
 				return height;
 			}
 
-			var hasPreviousItem:Boolean = height == height; //!isNaN
+			var hasPreviousItem:Boolean = height === height; //!isNaN
 			if(!hasPreviousItem)
 			{
 				height = 0;
@@ -3352,12 +3378,12 @@ package feathers.controls.renderers
 				return height;
 			}
 			var accessoryHeight:Number = this.accessory.height;
-			if(accessoryHeight != accessoryHeight) //isNaN
+			if(accessoryHeight !== accessoryHeight) //isNaN
 			{
 				return height;
 			}
 
-			var hasPreviousItem:Boolean = height == height; //!isNaN
+			var hasPreviousItem:Boolean = height === height; //!isNaN
 			if(!hasPreviousItem)
 			{
 				height = 0;
@@ -3807,7 +3833,7 @@ package feathers.controls.renderers
 			var iconIsInLayout:Boolean = this.currentIcon && this._iconPosition != ICON_POSITION_MANUAL;
 			var accessoryIsInLayout:Boolean = this.accessory && this._accessoryPosition != ACCESSORY_POSITION_MANUAL;
 			var accessoryGap:Number = this._accessoryGap;
-			if(accessoryGap != accessoryGap) //isNaN
+			if(accessoryGap !== accessoryGap) //isNaN
 			{
 				accessoryGap = this._gap;
 			}
@@ -3898,7 +3924,7 @@ package feathers.controls.renderers
 			if(forMeasurement)
 			{
 				calculatedWidth = this.explicitWidth;
-				if(calculatedWidth != calculatedWidth) //isNaN
+				if(calculatedWidth !== calculatedWidth) //isNaN
 				{
 					calculatedWidth = this._maxWidth;
 				}
@@ -3911,14 +3937,14 @@ package feathers.controls.renderers
 				adjustedGap = this._minGap;
 			}
 			var adjustedAccessoryGap:Number = this._accessoryGap;
-			if(adjustedAccessoryGap != adjustedAccessoryGap) //isNaN
+			if(adjustedAccessoryGap !== adjustedAccessoryGap) //isNaN
 			{
 				adjustedAccessoryGap = this._gap;
 			}
 			if(adjustedAccessoryGap == Number.POSITIVE_INFINITY)
 			{
 				adjustedAccessoryGap = this._minAccessoryGap;
-				if(adjustedAccessoryGap != adjustedAccessoryGap) //isNaN
+				if(adjustedAccessoryGap !== adjustedAccessoryGap) //isNaN
 				{
 					adjustedAccessoryGap = this._minGap;
 				}

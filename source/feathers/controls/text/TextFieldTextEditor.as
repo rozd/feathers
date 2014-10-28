@@ -13,7 +13,7 @@ package feathers.controls.text
 	import feathers.utils.geom.matrixToRotation;
 	import feathers.utils.geom.matrixToScaleX;
 	import feathers.utils.geom.matrixToScaleY;
-	
+
 	import flash.display.BitmapData;
 	import flash.display3D.Context3DProfile;
 	import flash.events.FocusEvent;
@@ -27,9 +27,10 @@ package feathers.controls.text
 	import flash.text.TextFieldType;
 	import flash.text.TextFormat;
 	import flash.ui.Keyboard;
-	
+
 	import starling.core.RenderSupport;
 	import starling.core.Starling;
+	import starling.display.DisplayObject;
 	import starling.display.Image;
 	import starling.events.Event;
 	import starling.textures.ConcreteTexture;
@@ -203,6 +204,7 @@ package feathers.controls.text
 		public function TextFieldTextEditor()
 		{
 			this.isQuickHitAreaEnabled = true;
+			this.addEventListener(Event.ADDED_TO_STAGE, textEditor_addedToStageHandler);
 			this.addEventListener(Event.REMOVED_FROM_STAGE, textEditor_removedFromStageHandler);
 		}
 
@@ -817,6 +819,44 @@ package feathers.controls.text
 		/**
 		 * @private
 		 */
+		protected var _useSnapshotDelayWorkaround:Boolean = false;
+
+		/**
+		 * Fixes an issue where <code>flash.text.TextField</code> renders
+		 * incorrectly when drawn to <code>BitmapData</code> by waiting one
+		 * frame.
+		 *
+		 * <p>Warning: enabling this workaround may cause slight flickering
+		 * after the <code>text</code> property is changed.</p>
+		 *
+		 * <p>In the following example, the workaround is enabled:</p>
+		 *
+		 * <listing version="3.0">
+		 * textEditor.useSnapshotDelayWorkaround = true;</listing>
+		 *
+		 * @default false
+		 */
+		public function get useSnapshotDelayWorkaround():Boolean
+		{
+			return this._useSnapshotDelayWorkaround;
+		}
+
+		/**
+		 * @private
+		 */
+		public function set useSnapshotDelayWorkaround(value:Boolean):void
+		{
+			if(this._useSnapshotDelayWorkaround == value)
+			{
+				return;
+			}
+			this._useSnapshotDelayWorkaround = value;
+			this.invalidate(INVALIDATION_FLAG_DATA);
+		}
+
+		/**
+		 * @private
+		 */
 		protected var resetScrollOnFocusOut:Boolean = true;
 
 		/**
@@ -833,7 +873,7 @@ package feathers.controls.text
 				this.textSnapshot = null;
 			}
 
-			if(this.textField.parent)
+			if(this.textField && this.textField.parent)
 			{
 				this.textField.parent.removeChild(this.textField);
 			}
@@ -851,16 +891,14 @@ package feathers.controls.text
 		 */
 		override public function render(support:RenderSupport, parentAlpha:Number):void
 		{
-			//theoretically, this will ensure that the TextField is set visible
-			//or invisible immediately after the snapshot changes visibility in
-			//the rendered graphics. the OS might take longer to do the change,
-			//though.
-			var isTextFieldVisible:Boolean = this.textSnapshot ? !this.textSnapshot.visible : this._textFieldHasFocus;
-			this.textField.visible = isTextFieldVisible;
-
-			this.transformTextField();
-			this.positionSnapshot();
-
+			if(this.textSnapshot)
+			{
+				this.positionSnapshot();
+			}
+			if(this.textField)
+			{
+				this.transformTextField();
+			}
 			super.render(support, parentAlpha);
 		}
 
@@ -1003,8 +1041,8 @@ package feathers.controls.text
 				result = new Point();
 			}
 
-			var needsWidth:Boolean = this.explicitWidth != this.explicitWidth; //isNaN
-			var needsHeight:Boolean = this.explicitHeight != this.explicitHeight; //isNaN
+			var needsWidth:Boolean = this.explicitWidth !== this.explicitWidth; //isNaN
+			var needsHeight:Boolean = this.explicitHeight !== this.explicitHeight; //isNaN
 			if(!needsWidth && !needsHeight)
 			{
 				result.x = this.explicitWidth;
@@ -1033,6 +1071,7 @@ package feathers.controls.text
 		override protected function initialize():void
 		{
 			this.textField = new TextField();
+			this.textField.visible = false;
 			this.textField.needsSoftKeyboard = true;
 			this.textField.addEventListener(flash.events.Event.CHANGE, textField_changeHandler);
 			this.textField.addEventListener(FocusEvent.FOCUS_IN, textField_focusInHandler);
@@ -1095,8 +1134,8 @@ package feathers.controls.text
 		 */
 		protected function autoSizeIfNeeded():Boolean
 		{
-			var needsWidth:Boolean = this.explicitWidth != this.explicitWidth; //isNaN
-			var needsHeight:Boolean = this.explicitHeight != this.explicitHeight; //isNaN
+			var needsWidth:Boolean = this.explicitWidth !== this.explicitWidth; //isNaN
+			var needsHeight:Boolean = this.explicitHeight !== this.explicitHeight; //isNaN
 			if(!needsWidth && !needsHeight)
 			{
 				return false;
@@ -1116,8 +1155,8 @@ package feathers.controls.text
 				result = new Point();
 			}
 
-			var needsWidth:Boolean = this.explicitWidth != this.explicitWidth; //isNaN
-			var needsHeight:Boolean = this.explicitHeight != this.explicitHeight; //isNaN
+			var needsWidth:Boolean = this.explicitWidth !== this.explicitWidth; //isNaN
+			var needsHeight:Boolean = this.explicitHeight !== this.explicitHeight; //isNaN
 
 			if(!needsWidth && !needsHeight)
 			{
@@ -1137,8 +1176,8 @@ package feathers.controls.text
 			var newWidth:Number = this.explicitWidth;
 			if(needsWidth)
 			{
-				this.measureTextField.width = newWidth + gutterDimensionsOffset;
-				newWidth = this.measureTextField.textWidth;
+				this.measureTextField.wordWrap = false;
+				newWidth = this.measureTextField.width - gutterDimensionsOffset;
 				if(newWidth < this._minWidth)
 				{
 					newWidth = this._minWidth;
@@ -1152,8 +1191,9 @@ package feathers.controls.text
 			var newHeight:Number = this.explicitHeight;
 			if(needsHeight)
 			{
+				this.measureTextField.wordWrap = this._wordWrap;
 				this.measureTextField.width = newWidth + gutterDimensionsOffset;
-				newHeight = this.measureTextField.textHeight;
+				newHeight = this.measureTextField.height - gutterDimensionsOffset;
 				if(this._useGutter)
 				{
 					newHeight += 4;
@@ -1241,6 +1281,7 @@ package feathers.controls.text
 		{
 			var stylesInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STYLES);
 			var dataInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_DATA);
+			var stateInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STATE);
 
 			if(sizeInvalid)
 			{
@@ -1252,11 +1293,18 @@ package feathers.controls.text
 
 			this.checkIfNewSnapshotIsNeeded();
 
-			if(!this._textFieldHasFocus && (stylesInvalid || dataInvalid || this._needsNewTexture))
+			if(!this._textFieldHasFocus && (stylesInvalid || dataInvalid || stateInvalid || this._needsNewTexture))
 			{
-				//we need to wait a frame for the flash.text.TextField to render
-				//properly. sometimes two, and this is a known issue.
-				this.addEventListener(Event.ENTER_FRAME, textEditor_enterFrameHandler);
+				if(this._useSnapshotDelayWorkaround)
+				{
+					//sometimes, we need to wait a frame for flash.text.TextField
+					//to render properly when drawing to BitmapData.
+					this.addEventListener(Event.ENTER_FRAME, refreshSnapshot_enterFrameHandler);
+				}
+				else
+				{
+					this.refreshSnapshot();
+				}
 			}
 			this.doPendingActions();
 		}
@@ -1446,8 +1494,21 @@ package feathers.controls.text
 			this.getTransformationMatrix(this.stage, HELPER_MATRIX);
 			this.textSnapshot.scaleX = 1 / matrixToScaleX(HELPER_MATRIX);
 			this.textSnapshot.scaleY = 1 / matrixToScaleY(HELPER_MATRIX);
+			this.textSnapshot.alpha = this._text.length > 0 ? 1 : 0;
 			bitmapData.dispose();
 			this._needsNewTexture = false;
+		}
+
+		/**
+		 * @private
+		 */
+		protected function textEditor_addedToStageHandler(event:Event):void
+		{
+			if(!this.textField.parent)
+			{
+				//the text field needs to be on the native stage to measure properly
+				Starling.current.nativeStage.addChild(this.textField);
+			}
 		}
 
 		/**
@@ -1466,15 +1527,41 @@ package feathers.controls.text
 		/**
 		 * @private
 		 */
-		protected function textEditor_enterFrameHandler(event:Event):void
+		protected function hasFocus_enterFrameHandler(event:Event):void
 		{
-			this.removeEventListener(Event.ENTER_FRAME, textEditor_enterFrameHandler);
-			this.refreshSnapshot();
 			if(this.textSnapshot)
 			{
 				this.textSnapshot.visible = !this._textFieldHasFocus;
-				this.textSnapshot.alpha = this._text.length > 0 ? 1 : 0;
 			}
+			this.textField.visible = this._textFieldHasFocus;
+
+			if(this._textFieldHasFocus)
+			{
+				var target:DisplayObject = this;
+				do
+				{
+					if(!target.hasVisibleArea)
+					{
+						this.textField.stage.focus = null;
+						break;
+					}
+					target = target.parent;
+				}
+				while(target)
+			}
+			else
+			{
+				this.removeEventListener(Event.ENTER_FRAME, hasFocus_enterFrameHandler);
+			}
+		}
+
+		/**
+		 * @private
+		 */
+		protected function refreshSnapshot_enterFrameHandler(event:Event):void
+		{
+			this.removeEventListener(Event.ENTER_FRAME, refreshSnapshot_enterFrameHandler);
+			this.refreshSnapshot();
 		}
 
 		/**
@@ -1491,10 +1578,7 @@ package feathers.controls.text
 		protected function textField_focusInHandler(event:FocusEvent):void
 		{
 			this._textFieldHasFocus = true;
-			if(this.textSnapshot)
-			{
-				this.textSnapshot.visible = false;
-			}
+			this.addEventListener(Event.ENTER_FRAME, hasFocus_enterFrameHandler);
 			this.invalidate(INVALIDATION_FLAG_SKIN);
 			this.dispatchEventWith(FeathersEventType.FOCUS_IN);
 		}

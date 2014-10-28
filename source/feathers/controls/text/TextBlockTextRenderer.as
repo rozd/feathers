@@ -35,7 +35,6 @@ package feathers.controls.text
 	import starling.core.RenderSupport;
 	import starling.core.Starling;
 	import starling.display.Image;
-	import starling.events.Event;
 	import starling.textures.ConcreteTexture;
 	import starling.textures.Texture;
 	import starling.utils.getNextPowerOfTwo;
@@ -155,6 +154,16 @@ package feathers.controls.text
 		 * snapshots appearing after the first are stored here.
 		 */
 		protected var textSnapshots:Vector.<Image>;
+
+		/**
+		 * @private
+		 */
+		protected var _textSnapshotScrollX:Number = 0;
+
+		/**
+		 * @private
+		 */
+		protected var _textSnapshotScrollY:Number = 0;
 
 		/**
 		 * @private
@@ -1100,8 +1109,8 @@ package feathers.controls.text
 				result = new Point();
 			}
 
-			var needsWidth:Boolean = this.explicitWidth != this.explicitWidth; //isNaN
-			var needsHeight:Boolean = this.explicitHeight != this.explicitHeight; //isNaN
+			var needsWidth:Boolean = this.explicitWidth !== this.explicitWidth; //isNaN
+			var needsHeight:Boolean = this.explicitHeight !== this.explicitHeight; //isNaN
 			if(!needsWidth && !needsHeight)
 			{
 				result.x = this.explicitWidth;
@@ -1214,8 +1223,8 @@ package feathers.controls.text
 				result = new Point();
 			}
 
-			var needsWidth:Boolean = this.explicitWidth != this.explicitWidth; //isNaN
-			var needsHeight:Boolean = this.explicitHeight != this.explicitHeight; //isNaN
+			var needsWidth:Boolean = this.explicitWidth !== this.explicitWidth; //isNaN
+			var needsHeight:Boolean = this.explicitHeight !== this.explicitHeight; //isNaN
 			var newWidth:Number = this.explicitWidth;
 			var newHeight:Number = this.explicitHeight;
 			if(needsWidth)
@@ -1242,6 +1251,10 @@ package feathers.controls.text
 			if(needsHeight)
 			{
 				newHeight = this._measurementTextLineContainer.height;
+				if(newHeight <= 0 && this._elementFormat)
+				{
+					newHeight = this._elementFormat.fontSize;
+				}
 			}
 
 			result.x = newWidth;
@@ -1257,6 +1270,7 @@ package feathers.controls.text
 		{
 			var stylesInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STYLES);
 			var dataInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_DATA);
+			var stateInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STATE);
 
 			if(sizeInvalid)
 			{
@@ -1314,7 +1328,7 @@ package feathers.controls.text
 			//instead of checking sizeInvalid, which will often be triggered by
 			//changing maxWidth or something for measurement, we check against
 			//the previous actualWidth/Height used for the snapshot.
-			if(stylesInvalid || dataInvalid || this._needsNewTexture ||
+			if(stylesInvalid || dataInvalid || stateInvalid || this._needsNewTexture ||
 				this.actualWidth != this._previousContentWidth ||
 				this.actualHeight != this._previousContentHeight)
 			{
@@ -1350,8 +1364,8 @@ package feathers.controls.text
 		 */
 		protected function autoSizeIfNeeded():Boolean
 		{
-			var needsWidth:Boolean = this.explicitWidth != this.explicitWidth; //isNaN
-			var needsHeight:Boolean = this.explicitHeight != this.explicitHeight; //isNaN
+			var needsWidth:Boolean = this.explicitWidth !== this.explicitWidth; //isNaN
+			var needsHeight:Boolean = this.explicitHeight !== this.explicitHeight; //isNaN
 			if(!needsWidth && !needsHeight)
 			{
 				return false;
@@ -1407,9 +1421,79 @@ package feathers.controls.text
 		/**
 		 * @private
 		 */
-		protected function texture_onRestore():void
+		protected function createTextureOnRestoreCallback(snapshot:Image):void
 		{
-			this.refreshSnapshot();
+			var self:TextBlockTextRenderer = this;
+			var texture:Texture = snapshot.texture;
+			texture.root.onRestore = function():void
+			{
+				var bitmapData:BitmapData = self.drawTextLinesRegionToBitmapData(
+					snapshot.x, snapshot.y, snapshot.width, snapshot.height);
+				texture.root.uploadBitmapData(bitmapData);
+			};
+		}
+
+		/**
+		 * @private
+		 */
+		protected function drawTextLinesRegionToBitmapData(textLinesX:Number, textLinesY:Number,
+			bitmapWidth:Number, bitmapHeight:Number, bitmapData:BitmapData = null):BitmapData
+		{
+			var scaleFactor:Number = Starling.contentScaleFactor;
+			var clipWidth:Number = (this.actualWidth * scaleFactor) - textLinesX;
+			var clipHeight:Number = (this.actualHeight * scaleFactor) - textLinesY;
+			if(!bitmapData || bitmapData.width != bitmapWidth || bitmapData.height != bitmapHeight)
+			{
+				if(bitmapData)
+				{
+					bitmapData.dispose();
+				}
+				bitmapData = new BitmapData(bitmapWidth, bitmapHeight, true, 0x00ff00ff);
+			}
+			else
+			{
+				//clear the bitmap data and reuse it
+				bitmapData.fillRect(bitmapData.rect, 0x00ff00ff);
+			}
+			HELPER_MATRIX.tx = -textLinesX - this._textSnapshotScrollX;
+			HELPER_MATRIX.ty = -textLinesY - this._textSnapshotScrollY;
+			HELPER_RECTANGLE.setTo(0, 0, clipWidth, clipHeight);
+			bitmapData.draw(this._textLineContainer, HELPER_MATRIX, null, null, HELPER_RECTANGLE);
+
+			var useNativeFilters:Boolean = this._nativeFilters && this._nativeFilters.length > 0 &&
+				this._snapshotWidth <= this._maxTextureDimensions && this._snapshotHeight <= this._maxTextureDimensions;
+			if(useNativeFilters)
+			{
+				//check to see if the bitmap data must be resized when the
+				//filters are applied.
+				this.measureNativeFilters(bitmapData, HELPER_RECTANGLE);
+				if(bitmapData.rect.equals(HELPER_RECTANGLE))
+				{
+					//in the ideal situation, we don't even need to resize the
+					//bitmap data.
+					this._textSnapshotOffsetX = 0;
+					this._textSnapshotOffsetY = 0;
+				}
+				else
+				{
+					HELPER_MATRIX.tx -= HELPER_RECTANGLE.x;
+					HELPER_MATRIX.ty -= HELPER_RECTANGLE.y;
+					var newBitmapData:BitmapData = new BitmapData(HELPER_RECTANGLE.width, HELPER_RECTANGLE.height, true, 0x00ff00ff);
+					this._textSnapshotOffsetX = HELPER_RECTANGLE.x;
+					this._textSnapshotOffsetY = HELPER_RECTANGLE.y;
+					HELPER_RECTANGLE.x = 0;
+					HELPER_RECTANGLE.y = 0;
+					newBitmapData.draw(this._textLineContainer, HELPER_MATRIX, null, null, HELPER_RECTANGLE);
+					bitmapData.dispose();
+					bitmapData = newBitmapData;
+				}
+			}
+			else
+			{
+				this._textSnapshotOffsetX = 0;
+				this._textSnapshotOffsetY = 0;
+			}
+			return bitmapData;
 		}
 
 		/**
@@ -1426,14 +1510,10 @@ package feathers.controls.text
 			HELPER_MATRIX.scale(scaleFactor, scaleFactor);
 			var totalBitmapWidth:Number = this._snapshotWidth;
 			var totalBitmapHeight:Number = this._snapshotHeight;
-			var clipWidth:Number = this.actualWidth * scaleFactor;
-			var clipHeight:Number = this.actualHeight * scaleFactor;
 			var xPosition:Number = 0;
 			var yPosition:Number = 0;
 			var bitmapData:BitmapData;
 			var snapshotIndex:int = -1;
-			var useNativeFilters:Boolean = this._nativeFilters && this._nativeFilters.length > 0 &&
-				totalBitmapWidth <= this._maxTextureDimensions && totalBitmapHeight <= this._maxTextureDimensions;
 			do
 			{
 				var currentBitmapWidth:Number = totalBitmapWidth;
@@ -1448,55 +1528,12 @@ package feathers.controls.text
 					{
 						currentBitmapHeight = this._maxTextureDimensions;
 					}
-					if(!bitmapData || bitmapData.width != currentBitmapWidth || bitmapData.height != currentBitmapHeight)
-					{
-						if(bitmapData)
-						{
-							bitmapData.dispose();
-						}
-						bitmapData = new BitmapData(currentBitmapWidth, currentBitmapHeight, true, 0x00ff00ff);
-					}
-					else
-					{
-						//clear the bitmap data and reuse it
-						bitmapData.fillRect(bitmapData.rect, 0x00ff00ff);
-					}
-					HELPER_MATRIX.tx = -xPosition;
-					HELPER_MATRIX.ty = -yPosition;
-					HELPER_RECTANGLE.setTo(0, 0, clipWidth, clipHeight);
-					bitmapData.draw(this._textLineContainer, HELPER_MATRIX, null, null, HELPER_RECTANGLE);
-					if(useNativeFilters)
-					{
-						this.measureNativeFilters(bitmapData, HELPER_RECTANGLE);
-						if(bitmapData.rect.equals(HELPER_RECTANGLE))
-						{
-							this._textSnapshotOffsetX = 0;
-							this._textSnapshotOffsetY = 0;
-						}
-						else
-						{
-							HELPER_MATRIX.tx -= HELPER_RECTANGLE.x;
-							HELPER_MATRIX.ty -= HELPER_RECTANGLE.y;
-							var newBitmapData:BitmapData = new BitmapData(HELPER_RECTANGLE.width, HELPER_RECTANGLE.height, true, 0x00ff00ff);
-							this._textSnapshotOffsetX = HELPER_RECTANGLE.x;
-							this._textSnapshotOffsetY = HELPER_RECTANGLE.y;
-							HELPER_RECTANGLE.x = 0;
-							HELPER_RECTANGLE.y = 0;
-							newBitmapData.draw(this._textLineContainer, HELPER_MATRIX, null, null, HELPER_RECTANGLE);
-							bitmapData.dispose();
-							bitmapData = newBitmapData;
-						}
-					}
-					else
-					{
-						this._textSnapshotOffsetX = 0;
-						this._textSnapshotOffsetY = 0;
-					}
+					bitmapData = this.drawTextLinesRegionToBitmapData(xPosition, yPosition,
+						currentBitmapWidth, currentBitmapHeight, bitmapData);
 					var newTexture:Texture;
 					if(!this.textSnapshot || this._needsNewTexture)
 					{
 						newTexture = Texture.fromBitmapData(bitmapData, false, false, scaleFactor);
-						newTexture.root.onRestore = texture_onRestore;
 					}
 					var snapshot:Image = null;
 					if(snapshotIndex >= 0)
@@ -1535,6 +1572,10 @@ package feathers.controls.text
 							existingTexture.root.uploadBitmapData(bitmapData);
 						}
 					}
+					if(newTexture)
+					{
+						this.createTextureOnRestoreCallback(snapshot);
+					}
 					if(snapshotIndex >= 0)
 					{
 						this.textSnapshots[snapshotIndex] = snapshot;
@@ -1548,14 +1589,11 @@ package feathers.controls.text
 					snapshotIndex++;
 					yPosition += currentBitmapHeight;
 					totalBitmapHeight -= currentBitmapHeight;
-					clipHeight -= currentBitmapHeight;
 				}
 				while(totalBitmapHeight > 0)
 				xPosition += currentBitmapWidth;
 				totalBitmapWidth -= currentBitmapWidth;
-				clipWidth -= currentBitmapWidth;
 				yPosition = 0;
-				clipHeight = this.actualHeight * scaleFactor;
 				totalBitmapHeight = this._snapshotHeight;
 			}
 			while(totalBitmapWidth > 0)
@@ -1588,7 +1626,23 @@ package feathers.controls.text
 		{
 			if(this._textElement)
 			{
-				this._textElement.text = this._text;
+				if(this._text)
+				{
+					this._textElement.text = this._text;
+					if(this._text !== null && this._text.charAt(this._text.length - 1) == " ")
+					{
+						//add an invisible control character because FTE apparently
+						//doesn't think that it's important to include trailing
+						//spaces in its width measurement.
+						this._textElement.text += String.fromCharCode(3);
+					}
+				}
+				else
+				{
+					//similar to above. this hack ensures that the baseline is
+					//measured properly when the text is an empty string.
+					this._textElement.text = String.fromCharCode(3);
+				}
 			}
 			HELPER_TEXT_LINES.length = 0;
 			var yPosition:Number = 0;
@@ -1715,23 +1769,7 @@ package feathers.controls.text
 				}
 			}
 
-			lineCount = textLines.length;
-			for(i = 0; i < lineCount; i++)
-			{
-				line = textLines[i];
-				if(this._textAlign == TEXT_ALIGN_CENTER)
-				{
-					line.x = (width - line.width) / 2;
-				}
-				else if(this._textAlign == TEXT_ALIGN_RIGHT)
-				{
-					line.x = width - line.width;
-				}
-				else
-				{
-					line.x = 0;
-				}
-			}
+			this.alignTextLines(textLines, width, this._textAlign);
 
 			inactiveTextLineCount = HELPER_TEXT_LINES.length;
 			for(i = 0; i < inactiveTextLineCount; i++)
@@ -1740,6 +1778,30 @@ package feathers.controls.text
 				textLineParent.removeChild(line);
 			}
 			HELPER_TEXT_LINES.length = 0;
+		}
+
+		/**
+		 * @private
+		 */
+		protected function alignTextLines(textLines:Vector.<TextLine>, width:Number, textAlign:String):void
+		{
+			var lineCount:int = textLines.length;
+			for(var i:int = 0; i < lineCount; i++)
+			{
+				var line:TextLine = textLines[i];
+				if(textAlign == TEXT_ALIGN_CENTER)
+				{
+					line.x = (width - line.width) / 2;
+				}
+				else if(textAlign == TEXT_ALIGN_RIGHT)
+				{
+					line.x = width - line.width;
+				}
+				else
+				{
+					line.x = 0;
+				}
+			}
 		}
 	}
 }

@@ -15,14 +15,16 @@ package feathers.controls.text
 
 	import flash.desktop.Clipboard;
 	import flash.desktop.ClipboardFormats;
+	import flash.display.DisplayObjectContainer;
 	import flash.display.InteractiveObject;
 	import flash.display.Stage;
 	import flash.events.Event;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
+	import flash.text.TextFormatAlign;
+	import flash.text.engine.TextElement;
 	import flash.text.engine.TextLine;
 	import flash.ui.Keyboard;
-	import flash.utils.Dictionary;
 
 	import starling.core.RenderSupport;
 	import starling.core.Starling;
@@ -33,8 +35,6 @@ package feathers.controls.text
 	import starling.events.Touch;
 	import starling.events.TouchEvent;
 	import starling.events.TouchPhase;
-	import starling.text.BitmapChar;
-	import starling.text.BitmapFont;
 
 	/**
 	 * Dispatched when the text property changes.
@@ -131,8 +131,17 @@ package feathers.controls.text
 	 * automatically disposed when the component is disposed from the stage.
 	 *
 	 * <p><strong>Warning:</strong> This text editor is intended for use in
-	 * desktop applications, and it does not provide support for software
+	 * desktop applications only, and it does not provide support for software
 	 * keyboards on mobile devices.</p>
+	 *
+	 * <p><strong>Beta Component:</strong> This is a new component, and its APIs
+	 * may need some changes between now and the next version of Feathers to
+	 * account for overlooked requirements or other issues. Upgrading to future
+	 * versions of Feathers may involve manual changes to your code that uses
+	 * this component. The
+	 * <a href="http://wiki.starling-framework.org/feathers/deprecation-policy">Feathers deprecation policy</a>
+	 * will not go into effect until this component's status is upgraded from
+	 * beta to stable.</p>
 	 *
 	 * @see http://wiki.starling-framework.org/feathers/text-editors
 	 * @see http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/text/engine/TextBlock.html flash.text.engine.TextBlock
@@ -172,6 +181,8 @@ package feathers.controls.text
 		{
 			super();
 			this._text = "";
+			this._textElement = new TextElement(this._text);
+			this._content = this._textElement;
 			this.isQuickHitAreaEnabled = true;
 			this.truncateToFit = false;
 			this.addEventListener(TouchEvent.TOUCH, textEditor_touchHandler);
@@ -554,11 +565,6 @@ package feathers.controls.text
 		/**
 		 * @private
 		 */
-		protected var _scrollX:Number = 0;
-
-		/**
-		 * @private
-		 */
 		protected var touchPointID:int = -1;
 
 		/**
@@ -697,8 +703,7 @@ package feathers.controls.text
 		{
 			var oldSnapshotX:Number = this._textSnapshotOffsetX;
 			var oldCursorX:Number = this._cursorSkin.x;
-			this._textSnapshotOffsetX -= this._scrollX;
-			this._cursorSkin.x -= this._scrollX;
+			this._cursorSkin.x -= this._textSnapshotScrollX;
 			super.render(support, parentAlpha);
 			this._textSnapshotOffsetX = oldSnapshotX;
 			this._cursorSkin.x = oldCursorX;
@@ -723,18 +728,12 @@ package feathers.controls.text
 		/**
 		 * @private
 		 */
-		override protected function draw():void
+		override protected function refreshTextLines(textLines:Vector.<TextLine>, textLineParent:DisplayObjectContainer, width:Number, height:Number):void
 		{
-			super.draw();
-
-			var clipRect:Rectangle = this.clipRect;
-			if(clipRect)
+			super.refreshTextLines(textLines, textLineParent, width, height);
+			if(textLineParent.width > width)
 			{
-				clipRect.setTo(0, 0, this.actualWidth, this.actualHeight);
-			}
-			else
-			{
-				this.clipRect = new Rectangle(0, 0, this.actualWidth, this.actualHeight)
+				this.alignTextLines(textLines, width, TextFormatAlign.LEFT);
 			}
 		}
 
@@ -801,7 +800,7 @@ package feathers.controls.text
 			}
 			else if((pointX - line.x) >= line.width)
 			{
-				return line.atomCount;
+				return this._text.length;
 			}
 			var atomIndex:int = line.getAtomIndexAtPoint(pointX, pointY);
 			if(atomIndex < 0)
@@ -812,7 +811,14 @@ package feathers.controls.text
 			if(atomIndex < 0)
 			{
 				//worse case: we couldn't figure it out at all
-				return line.atomCount;
+				return this._text.length;
+			}
+			//we're constraining the atom index to the text length because we
+			//may have added an invisible control character at the end due to
+			//the fact that FTE won't include trailing spaces in measurement
+			if(atomIndex > this._text.length)
+			{
+				atomIndex = this._text.length;
 			}
 			var atomBounds:Rectangle = line.getAtomBounds(atomIndex);
 			if((pointX - line.x - atomBounds.x) > atomBounds.width / 2)
@@ -829,6 +835,14 @@ package feathers.controls.text
 		{
 			if(!this._text || this._textLines.length == 0)
 			{
+				if(this._textAlign == TextFormatAlign.CENTER)
+				{
+					return Math.round(this.actualWidth / 2);
+				}
+				else if(this._textAlign == TextFormatAlign.RIGHT)
+				{
+					return this.actualWidth;
+				}
 				return 0;
 			}
 			var line:TextLine = this._textLines[0];
@@ -853,11 +867,7 @@ package feathers.controls.text
 			cursorX = int(cursorX - (this._cursorSkin.width / 2));
 			this._cursorSkin.x = cursorX;
 			this._cursorSkin.y = 0;
-			if(this._cursorSkin && this._textLines.length > 0)
-			{
-				var line:TextLine = this._textLines[0];
-				this._cursorSkin.height = line.height;
-			}
+			this._cursorSkin.height = this._elementFormat.fontSize;
 
 			//then we update the scroll to always show the cursor
 			var minScrollX:Number = cursorX + this._cursorSkin.width - this.actualWidth;
@@ -866,17 +876,22 @@ package feathers.controls.text
 			{
 				maxScrollX = 0;
 			}
-			if(this._scrollX < minScrollX)
+			var oldScrollX:Number = this._textSnapshotScrollX;
+			if(this._textSnapshotScrollX < minScrollX)
 			{
-				this._scrollX = minScrollX;
+				this._textSnapshotScrollX = minScrollX;
 			}
-			else if(this._scrollX > cursorX)
+			else if(this._textSnapshotScrollX > cursorX)
 			{
-				this._scrollX = cursorX;
+				this._textSnapshotScrollX = cursorX;
 			}
-			if(this._scrollX > maxScrollX)
+			if(this._textSnapshotScrollX > maxScrollX)
 			{
-				this._scrollX = maxScrollX;
+				this._textSnapshotScrollX = maxScrollX;
+			}
+			if(this._textSnapshotScrollX != oldScrollX)
+			{
+				this.invalidate(INVALIDATION_FLAG_DATA);
 			}
 		}
 
@@ -885,12 +900,12 @@ package feathers.controls.text
 		 */
 		protected function positionSelectionBackground():void
 		{
-			var startX:Number = this.getXPositionOfCharIndex(this._selectionBeginIndex) - this._scrollX;
+			var startX:Number = this.getXPositionOfCharIndex(this._selectionBeginIndex) - this._textSnapshotScrollX;
 			if(startX < 0)
 			{
 				startX = 0;
 			}
-			var endX:Number = this.getXPositionOfCharIndex(this._selectionEndIndex) - this._scrollX;
+			var endX:Number = this.getXPositionOfCharIndex(this._selectionEndIndex) - this._textSnapshotScrollX;
 			if(endX < 0)
 			{
 				endX = 0;
@@ -927,6 +942,7 @@ package feathers.controls.text
 				currentValue = this._unmaskedText;
 			}
 			this.text = currentValue.substr(0, this._selectionBeginIndex) + currentValue.substr(this._selectionEndIndex);
+			this.validate();
 			this.selectRange(this._selectionBeginIndex, this._selectionBeginIndex);
 		}
 
@@ -946,6 +962,7 @@ package feathers.controls.text
 				return;
 			}
 			this.text = newText;
+			this.validate();
 			var selectionIndex:int = this._selectionBeginIndex + text.length;
 			this.selectRange(selectionIndex, selectionIndex);
 		}
@@ -964,7 +981,7 @@ package feathers.controls.text
 			{
 				var touch:Touch = event.getTouch(this, null, this.touchPointID);
 				touch.getLocation(this, HELPER_POINT);
-				HELPER_POINT.x += this._scrollX;
+				HELPER_POINT.x += this._textSnapshotScrollX;
 				this.selectRange(this._selectionAnchorIndex, this.getSelectionIndexAtPoint(HELPER_POINT.x, HELPER_POINT.y));
 				if(touch.phase == TouchPhase.ENDED)
 				{
@@ -988,7 +1005,7 @@ package feathers.controls.text
 				}
 				this.touchPointID = touch.id;
 				touch.getLocation(this, HELPER_POINT);
-				HELPER_POINT.x += this._scrollX;
+				HELPER_POINT.x += this._textSnapshotScrollX;
 				if(event.shiftKey)
 				{
 					if(this._selectionAnchorIndex < 0)
@@ -1193,7 +1210,7 @@ package feathers.controls.text
 				{
 					this.selectRange(0, currentValue.length);
 				}
-				else if(charCode >= 32) //ignore control characters
+				else if(charCode >= 32 && !event.ctrlKey && !event.altKey) //ignore control characters
 				{
 					if(!this._restrict || this._restrict.isCharacterAllowed(charCode))
 					{
@@ -1207,6 +1224,7 @@ package feathers.controls.text
 			}
 			if(newIndex >= 0)
 			{
+				this.validate();
 				this.selectRange(newIndex, newIndex);
 			}
 		}

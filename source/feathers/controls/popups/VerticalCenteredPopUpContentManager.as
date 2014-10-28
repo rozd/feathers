@@ -32,6 +32,11 @@ package feathers.controls.popups
 	/**
 	 * @inheritDoc
 	 */
+	[Event(name="open",type="starling.events.Event")]
+
+	/**
+	 * @inheritDoc
+	 */
 	[Event(name="close",type="starling.events.Event")]
 
 	/**
@@ -186,6 +191,7 @@ package feathers.controls.popups
 			{
 				this.content.addEventListener(FeathersEventType.RESIZE, content_resizeHandler);
 			}
+			this.content.addEventListener(Event.REMOVED_FROM_STAGE, content_removedFromStageHandler);
 			this.layout();
 			var stage:Stage = Starling.current.stage;
 			stage.addEventListener(TouchEvent.TOUCH, stage_touchHandler);
@@ -195,6 +201,7 @@ package feathers.controls.popups
 			//display list have a chance to cancel the event first.
 			var priority:int = -getDisplayObjectDepthFromStage(this.content);
 			Starling.current.nativeStage.addEventListener(KeyboardEvent.KEY_DOWN, nativeStage_keyDownHandler, false, priority, true);
+			this.dispatchEventWith(Event.OPEN);
 		}
 
 		/**
@@ -206,16 +213,21 @@ package feathers.controls.popups
 			{
 				return;
 			}
+			var content:DisplayObject = this.content;
+			this.content = null;
 			var stage:Stage = Starling.current.stage;
 			stage.removeEventListener(TouchEvent.TOUCH, stage_touchHandler);
 			stage.removeEventListener(ResizeEvent.RESIZE, stage_resizeHandler);
 			Starling.current.nativeStage.removeEventListener(KeyboardEvent.KEY_DOWN, nativeStage_keyDownHandler);
-			if(this.content is IFeathersControl)
+			if(content is IFeathersControl)
 			{
-				this.content.removeEventListener(FeathersEventType.RESIZE, content_resizeHandler);
+				content.removeEventListener(FeathersEventType.RESIZE, content_resizeHandler);
 			}
-			PopUpManager.removePopUp(this.content);
-			this.content = null;
+			content.removeEventListener(Event.REMOVED_FROM_STAGE, content_removedFromStageHandler);
+			if(content.parent)
+			{
+				content.removeFromParent(false);
+			}
 			this.dispatchEventWith(Event.CLOSE);
 		}
 
@@ -280,6 +292,14 @@ package feathers.controls.popups
 		protected function content_resizeHandler(event:Event):void
 		{
 			this.layout();
+		}
+
+		/**
+		 * @private
+		 */
+		protected function content_removedFromStageHandler(event:Event):void
+		{
+			this.close();
 		}
 
 		/**

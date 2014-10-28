@@ -10,8 +10,8 @@ package feathers.controls.text
 	import feathers.core.FocusManager;
 	import feathers.core.ITextEditor;
 	import feathers.events.FeathersEventType;
-	import feathers.utils.text.TextInputRestrict;
 	import feathers.utils.text.TextInputNavigation;
+	import feathers.utils.text.TextInputRestrict;
 
 	import flash.desktop.Clipboard;
 	import flash.desktop.ClipboardFormats;
@@ -22,7 +22,6 @@ package feathers.controls.text
 	import flash.geom.Rectangle;
 	import flash.text.TextFormatAlign;
 	import flash.ui.Keyboard;
-	import flash.utils.Dictionary;
 
 	import starling.core.RenderSupport;
 	import starling.core.Starling;
@@ -128,8 +127,17 @@ package feathers.controls.text
 	 * edited at runtime by the user.
 	 *
 	 * <p><strong>Warning:</strong> This text editor is intended for use in
-	 * desktop applications, and it does not provide support for software
+	 * desktop applications only, and it does not provide support for software
 	 * keyboards on mobile devices.</p>
+	 *
+	 * <p><strong>Beta Component:</strong> This is a new component, and its APIs
+	 * may need some changes between now and the next version of Feathers to
+	 * account for overlooked requirements or other issues. Upgrading to future
+	 * versions of Feathers may involve manual changes to your code that uses
+	 * this component. The
+	 * <a href="http://wiki.starling-framework.org/feathers/deprecation-policy">Feathers deprecation policy</a>
+	 * will not go into effect until this component's status is upgraded from
+	 * beta to stable.</p>
 	 *
 	 * @see http://wiki.starling-framework.org/feathers/text-editors
 	 * @see http://doc.starling-framework.org/core/starling/text/BitmapFont.html starling.text.BitmapFont
@@ -718,6 +726,24 @@ package feathers.controls.text
 		/**
 		 * @private
 		 */
+		override protected function layoutCharacters(result:Point = null):Point
+		{
+			result = super.layoutCharacters(result);
+			if(this.explicitWidth === this.explicitWidth && //!isNaN
+				result.x > this.explicitWidth)
+			{
+				this._characterBatch.reset();
+				var oldTextAlign:String = this.currentTextFormat.align;
+				this.currentTextFormat.align = TextFormatAlign.LEFT;
+				result = super.layoutCharacters(result);
+				this.currentTextFormat.align = oldTextAlign;
+			}
+			return result;
+		}
+
+		/**
+		 * @private
+		 */
 		override protected function refreshTextFormat():void
 		{
 			super.refreshTextFormat();
@@ -726,7 +752,7 @@ package feathers.controls.text
 				var font:BitmapFont = this.currentTextFormat.font;
 				var customSize:Number = this.currentTextFormat.size;
 				var scale:Number = customSize / font.size;
-				if(scale != scale) //isNaN
+				if(scale !== scale) //isNaN
 				{
 					scale = 1;
 				}
@@ -794,7 +820,7 @@ package feathers.controls.text
 			var customLetterSpacing:Number = this.currentTextFormat.letterSpacing;
 			var isKerningEnabled:Boolean = this.currentTextFormat.isKerningEnabled;
 			var scale:Number = customSize / font.size;
-			if(scale != scale) //isNaN
+			if(scale !== scale) //isNaN
 			{
 				scale = 1;
 			}
@@ -802,7 +828,7 @@ package feathers.controls.text
 			if(align != TextFormatAlign.LEFT)
 			{
 				var lineWidth:Number = this.measureText(HELPER_POINT).x;
-				var hasExplicitWidth:Boolean = this.explicitWidth == this.explicitWidth; //!isNaN
+				var hasExplicitWidth:Boolean = this.explicitWidth === this.explicitWidth; //!isNaN
 				var maxLineWidth:Number = hasExplicitWidth ? this.explicitWidth : this._maxWidth;
 				if(maxLineWidth > lineWidth)
 				{
@@ -829,7 +855,7 @@ package feathers.controls.text
 				}
 				var currentKerning:Number = 0;
 				if(isKerningEnabled &&
-					previousCharID == previousCharID) //!isNaN
+					previousCharID === previousCharID) //!isNaN
 				{
 					currentKerning = charData.getKerning(previousCharID) * scale;
 				}
@@ -862,7 +888,7 @@ package feathers.controls.text
 			var customLetterSpacing:Number = this.currentTextFormat.letterSpacing;
 			var isKerningEnabled:Boolean = this.currentTextFormat.isKerningEnabled;
 			var scale:Number = customSize / font.size;
-			if(scale != scale) //isNaN
+			if(scale !== scale) //isNaN
 			{
 				scale = 1;
 			}
@@ -871,7 +897,7 @@ package feathers.controls.text
 			if(align != TextFormatAlign.LEFT)
 			{
 				var lineWidth:Number = this.measureText(HELPER_POINT).x;
-				var hasExplicitWidth:Boolean = this.explicitWidth == this.explicitWidth; //!isNaN
+				var hasExplicitWidth:Boolean = this.explicitWidth === this.explicitWidth; //!isNaN
 				var maxLineWidth:Number = hasExplicitWidth ? this.explicitWidth : this._maxWidth;
 				if(maxLineWidth > lineWidth)
 				{
@@ -902,7 +928,7 @@ package feathers.controls.text
 				}
 				var currentKerning:Number = 0;
 				if(isKerningEnabled &&
-					previousCharID == previousCharID) //!isNaN
+					previousCharID === previousCharID) //!isNaN
 				{
 					currentKerning = charData.getKerning(previousCharID) * scale;
 				}
@@ -955,7 +981,7 @@ package feathers.controls.text
 			var font:BitmapFont = this.currentTextFormat.font;
 			var customSize:Number = this.currentTextFormat.size;
 			var scale:Number = customSize / font.size;
-			if(scale != scale) //isNaN
+			if(scale !== scale) //isNaN
 			{
 				scale = 1;
 			}
@@ -1265,7 +1291,7 @@ package feathers.controls.text
 				{
 					this.selectRange(0, currentValue.length);
 				}
-				else if(charCode >= 32) //ignore control characters
+				else if(charCode >= 32 && !event.ctrlKey && !event.altKey) //ignore control characters
 				{
 					if(!this._restrict || this._restrict.isCharacterAllowed(charCode))
 					{
