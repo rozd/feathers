@@ -1223,18 +1223,21 @@ package feathers.layout
 					}
 					//handle all other vertical alignment values (we handled
 					//justify already). the y position of all items is set here.
+					var verticalAlignHeight:Number = availableHeight;
+					if(totalHeight > verticalAlignHeight)
+					{
+						verticalAlignHeight = totalHeight;
+					}
 					switch(this._verticalAlign)
 					{
 						case VERTICAL_ALIGN_BOTTOM:
 						{
-							item.y = item.pivotY + boundsY + availableHeight - this._paddingBottom - item.height;
+							item.y = item.pivotY + boundsY + verticalAlignHeight - this._paddingBottom - item.height;
 							break;
 						}
 						case VERTICAL_ALIGN_MIDDLE:
 						{
-							//round to the nearest pixel when dividing by 2 to
-							//align in the middle
-							item.y = item.pivotY + boundsY + this._paddingTop + Math.round((availableHeight - this._paddingTop - this._paddingBottom - item.height) / 2);
+							item.y = item.pivotY + boundsY + this._paddingTop + Math.round((verticalAlignHeight - this._paddingTop - this._paddingBottom - item.height) / 2);
 							break;
 						}
 						default: //top
@@ -1923,6 +1926,13 @@ package feathers.layout
 						}
 					}
 					layoutItem.width = itemWidth;
+					if(layoutItem is IValidating)
+					{
+						//changing the width of the item may cause its height
+						//to change, so we need to validate. the height is
+						//needed for measurement.
+						IValidating(layoutItem).validate();
+					}
 				}
 			}
 			while(needsAnotherPass)

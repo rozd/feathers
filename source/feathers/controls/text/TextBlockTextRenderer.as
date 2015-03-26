@@ -1400,7 +1400,7 @@ package feathers.controls.text
 				}
 				if(this.textSnapshot)
 				{
-					this.textSnapshot.visible = this._content !== null;
+					this.textSnapshot.visible = this._snapshotWidth > 0 && this._snapshotHeight > 0 && this._content !== null;
 				}
 			}
 		}
@@ -1486,9 +1486,13 @@ package feathers.controls.text
 			var texture:Texture = snapshot.texture;
 			texture.root.onRestore = function():void
 			{
+				var scaleFactor:Number = Starling.contentScaleFactor;
+				HELPER_MATRIX.identity();
+				HELPER_MATRIX.scale(scaleFactor, scaleFactor);
 				var bitmapData:BitmapData = self.drawTextLinesRegionToBitmapData(
-					snapshot.x, snapshot.y, snapshot.width, snapshot.height);
+					snapshot.x, snapshot.y, texture.nativeWidth, texture.nativeHeight);
 				texture.root.uploadBitmapData(bitmapData);
+				bitmapData.dispose();
 			};
 		}
 

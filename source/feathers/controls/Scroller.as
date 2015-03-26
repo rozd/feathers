@@ -484,6 +484,11 @@ package feathers.controls
 		/**
 		 * @private
 		 */
+		protected static const FUZZY_PAGE_SIZE_PADDING:Number = 0.000001;
+
+		/**
+		 * @private
+		 */
 		protected static function defaultScrollBarFactory():IScrollBar
 		{
 			return new SimpleScrollBar();
@@ -3615,6 +3620,13 @@ package feathers.controls
 			this._viewPort.visibleWidth = this.explicitWidth - horizontalWidthOffset;
 			this._viewPort.visibleHeight = this.explicitHeight - verticalHeightOffset;
 			var minVisibleWidth:Number = this._minWidth - horizontalWidthOffset;
+			if(this.originalBackgroundWidth === this.originalBackgroundWidth && //!isNaN
+			 this.originalBackgroundWidth > minVisibleWidth)
+			{
+				//to avoid going through the loop too many times, we need to
+				//account for the background skin's size.
+				minVisibleWidth = this.originalBackgroundWidth;
+			}
 			if(minVisibleWidth < 0)
 			{
 				minVisibleWidth = 0;
@@ -3622,6 +3634,12 @@ package feathers.controls
 			this._viewPort.minVisibleWidth = minVisibleWidth;
 			this._viewPort.maxVisibleWidth = this._maxWidth - horizontalWidthOffset;
 			var minVisibleHeight:Number = this._minHeight - verticalHeightOffset;
+			if(this.originalBackgroundHeight === this.originalBackgroundHeight && //!isNaN
+				this.originalBackgroundHeight > minVisibleHeight)
+			{
+				//see note above about the background skin size
+				minVisibleHeight = this.originalBackgroundHeight;
+			}
 			if(minVisibleHeight < 0)
 			{
 				minVisibleHeight = 0;
@@ -3654,6 +3672,13 @@ package feathers.controls
 				//if we didn't need to do any measurement, we would have skipped
 				//setting this stuff earlier, and now is the last chance
 				var minVisibleWidth:Number = this._minWidth - horizontalWidthOffset;
+				if(this.originalBackgroundWidth === this.originalBackgroundWidth && //!isNaN
+					this.originalBackgroundWidth > minVisibleWidth)
+				{
+					//to avoid going through the loop too many times, we need to
+					//account for the background skin's size
+					minVisibleWidth = this.originalBackgroundWidth;
+				}
 				if(minVisibleWidth < 0)
 				{
 					minVisibleWidth = 0;
@@ -3661,6 +3686,12 @@ package feathers.controls
 				this._viewPort.minVisibleWidth = minVisibleWidth;
 				this._viewPort.maxVisibleWidth = this._maxWidth - horizontalWidthOffset;
 				var minVisibleHeight:Number = this._minHeight - verticalHeightOffset;
+				if(this.originalBackgroundHeight === this.originalBackgroundHeight && //!isNaN
+					this.originalBackgroundHeight > minVisibleHeight)
+				{
+					//see note above about the background skin size
+					minVisibleHeight = this.originalBackgroundHeight;
+				}
 				if(minVisibleHeight < 0)
 				{
 					minVisibleHeight = 0;
@@ -3862,6 +3893,13 @@ package feathers.controls
 				else
 				{
 					this._minHorizontalPageIndex = 0;
+					//floating point errors could result in the max page index
+					//being 1 larger than it should be.
+					var roundedDownRange:Number = roundDownToNearest(horizontalScrollRange, this.actualPageWidth);
+					if((horizontalScrollRange - roundedDownRange) < FUZZY_PAGE_SIZE_PADDING)
+					{
+						horizontalScrollRange = roundedDownRange;
+					}
 					this._maxHorizontalPageIndex = Math.ceil(horizontalScrollRange / this.actualPageWidth);
 				}
 
@@ -3883,6 +3921,13 @@ package feathers.controls
 				else
 				{
 					this._minVerticalPageIndex = 0;
+					//floating point errors could result in the max page index
+					//being 1 larger than it should be.
+					roundedDownRange = roundDownToNearest(verticalScrollRange, this.actualPageHeight);
+					if((verticalScrollRange - roundedDownRange) < FUZZY_PAGE_SIZE_PADDING)
+					{
+						verticalScrollRange = roundedDownRange;
+					}
 					this._maxVerticalPageIndex = Math.ceil(verticalScrollRange / this.actualPageHeight);
 				}
 			}
@@ -3923,7 +3968,19 @@ package feathers.controls
 					else
 					{
 						var adjustedHorizontalScrollPosition:Number = this._horizontalScrollPosition - this._minHorizontalScrollPosition;
-						this._horizontalPageIndex = Math.floor(adjustedHorizontalScrollPosition / this.actualPageWidth);
+						var unroundedPageIndex:Number = adjustedHorizontalScrollPosition / this.actualPageWidth;
+						var nextPageIndex:int = Math.ceil(unroundedPageIndex);
+						if(unroundedPageIndex != nextPageIndex && (nextPageIndex - unroundedPageIndex) < FUZZY_PAGE_SIZE_PADDING)
+						{
+							//we almost always want to round down, but a
+							//floating point math error may result in the page
+							//index being 1 too small in rare cases.
+							this._horizontalPageIndex = nextPageIndex;
+						}
+						else
+						{
+							this._horizontalPageIndex = Math.floor(unroundedPageIndex);
+						}
 					}
 				}
 				else
@@ -3962,7 +4019,19 @@ package feathers.controls
 					else
 					{
 						var adjustedVerticalScrollPosition:Number = this._verticalScrollPosition - this._minVerticalScrollPosition;
-						this._verticalPageIndex = Math.floor(adjustedVerticalScrollPosition / this.actualPageHeight);
+						unroundedPageIndex = adjustedVerticalScrollPosition / this.actualPageHeight;
+						nextPageIndex = Math.ceil(unroundedPageIndex);
+						if(unroundedPageIndex != nextPageIndex && (nextPageIndex - unroundedPageIndex) < FUZZY_PAGE_SIZE_PADDING)
+						{
+							//we almost always want to round down, but a
+							//floating point math error may result in the page
+							//index being 1 too small in rare cases.
+							this._verticalPageIndex = nextPageIndex;
+						}
+						else
+						{
+							this._verticalPageIndex = Math.floor(unroundedPageIndex);
+						}
 					}
 				}
 				else
@@ -4277,13 +4346,10 @@ package feathers.controls
 		 */
 		protected function refreshClipRect():void
 		{
-			var hasElasticEdgesAndTouch:Boolean = this._hasElasticEdges && (this._interactionMode == INTERACTION_MODE_TOUCH || this._interactionMode == INTERACTION_MODE_TOUCH_AND_SCROLL_BARS);
-			var contentIsLargeEnoughToScroll:Boolean = this._maxHorizontalScrollPosition != this._minHorizontalScrollPosition || this._maxVerticalScrollPosition != this._minVerticalScrollPosition;
-			if(!this._clipContent || (!hasElasticEdgesAndTouch && !contentIsLargeEnoughToScroll))
+			if(!this._clipContent)
 			{
 				return;
 			}
-
 			var clipRect:Rectangle = this._viewPort.clipRect;
 			if(!clipRect)
 			{
@@ -4732,13 +4798,16 @@ package feathers.controls
 				}
 				else
 				{
+					//we need to use Math.round() on these values to avoid
+					//floating-point errors that could result in the values
+					//being rounded down too far.
 					if(this._minHorizontalScrollPosition == Number.NEGATIVE_INFINITY)
 					{
-						targetHorizontalPageIndex = snappedPageHorizontalScrollPosition / this.actualPageWidth;
+						targetHorizontalPageIndex = Math.round(snappedPageHorizontalScrollPosition / this.actualPageWidth);
 					}
 					else
 					{
-						targetHorizontalPageIndex = (snappedPageHorizontalScrollPosition - this._minHorizontalScrollPosition) / this.actualPageWidth;
+						targetHorizontalPageIndex = Math.round((snappedPageHorizontalScrollPosition - this._minHorizontalScrollPosition) / this.actualPageWidth);
 					}
 				}
 				this.throwToPage(targetHorizontalPageIndex, -1, this._pageThrowDuration);
@@ -4815,13 +4884,16 @@ package feathers.controls
 				}
 				else
 				{
+					//we need to use Math.round() on these values to avoid
+					//floating-point errors that could result in the values
+					//being rounded down too far.
 					if(this._minVerticalScrollPosition == Number.NEGATIVE_INFINITY)
 					{
-						targetVerticalPageIndex = snappedPageVerticalScrollPosition / this.actualPageHeight;
+						targetVerticalPageIndex = Math.round(snappedPageVerticalScrollPosition / this.actualPageHeight);
 					}
 					else
 					{
-						targetVerticalPageIndex = (snappedPageVerticalScrollPosition - this._minVerticalScrollPosition) / this.actualPageHeight;
+						targetVerticalPageIndex = Math.round((snappedPageVerticalScrollPosition - this._minVerticalScrollPosition) / this.actualPageHeight);
 					}
 				}
 				this.throwToPage(-1, targetVerticalPageIndex, this._pageThrowDuration);
